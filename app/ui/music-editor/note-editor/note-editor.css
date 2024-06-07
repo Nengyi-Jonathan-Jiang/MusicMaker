@@ -198,9 +198,6 @@
 
 .piano-notes-column {
     position: relative;
-}
-
-.piano-notes-column {
     margin-right: 2px;
 }
 
@@ -375,4 +372,12 @@
 #controls[data-time-signature="4+2"] + * .piano-notes-column:nth-child(24n + 13)::before,
 #controls[data-time-signature="12+2"] + * .piano-notes-column:nth-child(24n + 13)::before{
     content: counter(measure-number);
+}
+
+
+
+.piano-notes-column-placeholder {
+    display: block;
+    width: 12px;
+    height: 2110px;
 }

@@ -1,10 +1,11 @@
 import './note-editor.css'
 
 import {ScoreEditor} from "@/app/logic/scoreEditor";
-import React, {memo, useContext, useEffect, useRef, useState} from "react";
+import React, {memo, RefObject, useContext, useEffect, useRef, useState} from "react";
 import {arraysEqual, createArray, useListenerOnWindow} from "@/app/lib/util";
 import {InstrumentCommand} from "@/app/logic/instrumentData";
 import {ScoreEditorContext} from "@/app/ui/music-editor/musicEditor";
+import {LazyLoader} from "@/app/ui/lazyLoader";
 
 export function NoteEditor() {
     const editor = useContext(ScoreEditorContext) as ScoreEditor;
@@ -48,7 +49,13 @@ export function NoteEditor() {
         <div id="piano-note-names"> {new Array(88).fill(null).map((_, i) => <span
             key={`note-name-${i}`}></span>)} </div>
         <div id="piano-notes">
-            {createArray(scoreData.length, i => <NoteEditorColumn key={i} columnIndex={i}/>)}
+            {createArray(scoreData.length, i =>
+                <LazyLoader key={i} placeholderSupplier={
+                    (ref : RefObject<HTMLDivElement>) => <div className={"piano-notes-column piano-notes-column-placeholder"} ref={ref}></div>
+                }>
+                    <NoteEditorColumn columnIndex={i}/>
+                </LazyLoader>
+            )}
         </div>
         <div id="piano-notes-end-space"></div>
     </div>);
