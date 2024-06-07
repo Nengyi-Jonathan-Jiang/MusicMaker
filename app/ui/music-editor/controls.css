@@ -1,0 +1,101 @@
+
+#controls {
+    display: flex;
+    padding: 10px;
+    background-color: var(--bg-color-light);
+    margin-bottom: 10px;
+}
+
+#controls>.controls-section {
+    display: flex;
+    position: relative;
+    align-items: center;
+}
+
+#controls>.controls-section>*:not(:first-child) {
+    margin-left: 5px;
+}
+
+#controls>.controls-section:not(:first-child)::before {
+    content: "";
+
+    display: block;
+    width: 1px;
+    height: 100%;
+    background-color: var(--medium-color);
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+#controls-section-middle {
+    flex-grow: 1;
+}
+
+#controls :is(button,input) {
+}
+
+#rewind, #play {
+    font-family: "JetBrains Mono", monospace;
+    padding-bottom: 1px;
+}
+
+#play:not([data-playing])::after {
+    content: "|>";
+}
+
+#play[data-playing]::after {
+    content: "||";
+}
+
+#bpm {
+    width: 2em;
+}
+
+#time-signature {
+    display: flex;
+    flex-direction: column;
+    font-size: 80%;
+    align-items: center;
+    padding-top: 1px;
+    user-select: none;
+}
+
+#time-signature>span:first-child {
+    margin-bottom: -5px;
+}
+
+#voice-selector>span {
+    display: inline-flex;
+    width: 1.5em;
+    height: 1.5em;
+    border-radius: 0.75em;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+}
+
+#voice-selector>span[data-active] {
+    background-color: var(--voice-color);
+}
+
+#voice-selector>span:nth-child(1) { --voice-color: var(--voice-1-color) }
+#voice-selector>span:nth-child(2) { --voice-color: var(--voice-2-color) }
+#voice-selector>span:nth-child(3) { --voice-color: var(--voice-3-color) }
+#voice-selector>span:nth-child(4) { --voice-color: var(--voice-4-color) }
+#voice-selector>span:nth-child(5) { --voice-color: var(--voice-5-color) }
+#voice-selector>span:nth-child(6) { --voice-color: var(--voice-6-color) }
+
+#instrument-select>option {
+    background-color: var(--bg-color-light);
+}
+
+#snap-selector>span {
+    user-select: none;
+    padding: 2px 5px;
+    margin-left: 5px;
+}
+
+#snap-selector>span[data-active] {
+    outline: 1px solid var(--highlight-color);
+    outline-offset: -1px;
+}
