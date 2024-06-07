@@ -1,5 +1,6 @@
 import {createArray} from "@/app/lib/util";
-import {InstrumentData} from "@/app/logic/instrumentData";
+import {VoiceData} from "@/app/logic/voiceData";
+import {Instrument} from "@/app/logic/instrument";
 
 export class ScoreData {
     static get NUM_NOTES() {
@@ -10,7 +11,7 @@ export class ScoreData {
         return 6
     }
 
-    noteData: InstrumentData[];
+    noteData: VoiceData[];
 
     length: number;
 
@@ -18,7 +19,7 @@ export class ScoreData {
 
     constructor(length: number) {
         this.length = length;
-        this.noteData = createArray(ScoreData.NUM_VOICES, () => new InstrumentData(length));
+        this.noteData = createArray(ScoreData.NUM_VOICES, () => new VoiceData(length));
         this.bpm = 120;
     }
 }

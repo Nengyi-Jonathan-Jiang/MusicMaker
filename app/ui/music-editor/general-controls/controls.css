@@ -89,6 +89,10 @@
     background-color: var(--bg-color-light);
 }
 
+:is(#instrument-select, #instrument-select>option):not([data-loaded]) {
+    color: var(--medium-color);
+}
+
 #snap-selector>span {
     user-select: none;
     padding: 2px 5px;

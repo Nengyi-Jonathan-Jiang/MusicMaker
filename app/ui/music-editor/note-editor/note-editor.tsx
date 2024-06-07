@@ -3,7 +3,7 @@ import './note-editor.css'
 import {ScoreEditor} from "@/app/logic/scoreEditor";
 import React, {memo, RefObject, useContext, useEffect, useRef, useState} from "react";
 import {arraysEqual, createArray, useListenerOnWindow} from "@/app/lib/util";
-import {InstrumentCommand} from "@/app/logic/instrumentData";
+import {VoiceCommand} from "@/app/logic/voiceData";
 import {ScoreEditorContext} from "@/app/ui/music-editor/musicEditor";
 import {RenderWhenVisible} from "@/app/ui/renderWhenVisible";
 
@@ -61,7 +61,7 @@ export function NoteEditor() {
     </div>);
 }
 
-const NoteEditorKeyDisplay = memo(function NoteEditorKeyDisplay({commands}: { commands: InstrumentCommand[] }) {
+const NoteEditorKeyDisplay = memo(function NoteEditorKeyDisplay({commands}: { commands: VoiceCommand[] }) {
     return <>{
         commands.map((command, i) =>
             [
@@ -73,7 +73,7 @@ const NoteEditorKeyDisplay = memo(function NoteEditorKeyDisplay({commands}: { co
             ][command]
         )
     }</>
-}, (a: {commands: InstrumentCommand[]}, b: {commands: InstrumentCommand[]}) => arraysEqual(a.commands, b.commands));
+}, (a: {commands: VoiceCommand[]}, b: {commands: VoiceCommand[]}) => arraysEqual(a.commands, b.commands));
 
 function NoteEditorKey({columnIndex, noteIndex}: {
     columnIndex: number,

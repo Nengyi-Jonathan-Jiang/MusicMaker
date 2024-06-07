@@ -12,16 +12,17 @@ function InstrumentSelector() {
 
     const rerender = useManualRerender();
 
+    let activeInstrument = editor.instrumentForActiveVoice;
     return <>
         <span>Instrument:</span>
         <label>
             <select id="instrument-select" onChange={(e) => {
                  editor.instrumentForActiveVoice = e.target.value;
                  rerender();
-            }} value={editor.instrumentForActiveVoice}>
-                {[...instrumentData.keys()].map(instrumentName => (
+            }} value={activeInstrument.name} data-loaded={activeInstrument.isSamplerLoaded ? "" : (activeInstrument.onSamplerLoad(rerender), null)}>
+                {[...instrumentData.entries()].map(([instrumentName, task]) => (
                     <option value={instrumentName}
-                            key={`instrument-select-${instrumentName}`}>{instrumentName}</option>
+                            key={`instrument-select-${instrumentName}`} data-loaded={task.isFinished ? "" : (task.onFinished(rerender), null)}>{instrumentName}</option>
                 ))}
             </select>
             <span className="select-focus"></span>

@@ -1,5 +1,5 @@
-import {AsyncTask} from "@/app/lib/util";
 import {Sampler, SamplerOptions, ToneAudioBuffer} from "tone";
+import {AsyncTask} from "@/app/lib/asyncTask";
 
 const instrumentsStr = `
 Piano :

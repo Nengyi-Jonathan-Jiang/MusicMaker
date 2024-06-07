@@ -1,22 +1,27 @@
 import * as Tone from "tone";
 import {Sampler, SamplerOptions} from "tone";
 import {instrumentData} from "@/public/audio/allInstruments";
-import {AsyncTask} from "@/app/lib/util";
+
+import {AsyncTask} from "@/app/lib/asyncTask";
 
 export class Instrument {
+    static get DEFAULT_TYPE () { return 'Piano' }
+
     name: string;
     sampler: Sampler | null;
     #samplerData: AsyncTask<Partial<SamplerOptions>>;
 
-    constructor(name: string) {
-        this.name = name;
-        const samplerData = instrumentData.get(name);
-        if(samplerData === undefined) {
-            throw new Error(`Unknown instrument ${name}`);
+    constructor(instrumentType: string = Instrument.DEFAULT_TYPE) {
+        this.name = instrumentType;
+        const samplerDataFetch = instrumentData.get(instrumentType);
+        if(samplerDataFetch === undefined) {
+            throw new Error(`Unknown instrument ${instrumentType}`);
         }
+        // If the sampler data has not begun fetching yet, start fetching the data
+        samplerDataFetch.start();
 
         this.sampler = null;
-        (this.#samplerData = samplerData).onFinished((options) => {
+        (this.#samplerData = samplerDataFetch).onFinished((options) => {
             this.sampler = new Sampler({...options, release: 1}).toDestination();
             this.sampler.sync();
         });
@@ -53,5 +58,6 @@ async function tryStartAudioContext() {
         console.log('Started web audio context');
     }
 }
+
 window.addEventListener("keydown", tryStartAudioContext);
 window.addEventListener("mousedown", tryStartAudioContext);

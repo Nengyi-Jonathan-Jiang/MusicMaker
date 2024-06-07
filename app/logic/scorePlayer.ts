@@ -3,9 +3,14 @@ import {createArray, getCurrTimeSeconds} from "@/app/lib/util";
 import {getTransport} from "tone";
 import * as Constants from "@/app/logic/Constants";
 import {ScoreData} from "@/app/logic/scoreData";
+import {LinearValueConvertor, ValueConvertor} from "@/app/lib/valueConvertor";
+import {MaximumNumberFinder} from "@/app/lib/minMax";
 
 const NOTE_WIDTH = 14;
 const NOTES_LEFT_MARGIN = 8;
+
+const columnsToScrollAmountConvertor = new LinearValueConvertor(14, 8);
+const columnsToBeatsConvertor = new LinearValueConvertor(1 / 6);
 
 export class ScorePlayer {
     instruments: Instrument[];
@@ -14,7 +19,7 @@ export class ScorePlayer {
     #currTimeout;
 
     constructor() {
-        this.instruments = createArray(Constants.NUM_VOICES, () => new Instrument('Piano'))
+        this.instruments = createArray(Constants.NUM_VOICES, () => new Instrument())
 
         this.#isPlaying = false;
 
@@ -55,10 +60,13 @@ export class ScorePlayer {
         getTransport().start();
         this.#isPlaying = true;
 
-        const columnOffset = (el.scrollLeft - NOTES_LEFT_MARGIN) / NOTE_WIDTH;
-        let playDuration = 0;
+        const currentColumn = columnsToScrollAmountConvertor.convertBackwards(el.scrollLeft);
 
-        let timeFactor = 60 / score.bpm / 6;
+        const columnsToSecondsConvertor = new LinearValueConvertor(60 / score.bpm / 6, -currentColumn, true);
+        const timeToScrollAmountConvertor = ValueConvertor.compose(ValueConvertor.invert(columnsToSecondsConvertor), columnsToScrollAmountConvertor);
+
+        const playDurationFinder = new MaximumNumberFinder(0);
+
         for (let voice = 0; voice < ScoreData.NUM_VOICES; voice++) {
             const instrument = this.instruments[voice];
 
@@ -68,9 +76,7 @@ export class ScorePlayer {
                 for (let noteIndex = 0; noteIndex < ScoreData.NUM_NOTES; noteIndex++) {
                     const command = score.noteData[voice].getCommand(column, noteIndex);
 
-                    const col = column - columnOffset;
-
-                    if (col < 0) {
+                    if (column < currentColumn) {
                         if (command.doBegin) {
                             initialNotes.add(noteIndex);
                         }
@@ -81,11 +87,12 @@ export class ScorePlayer {
                     }
 
                     if (command.doBegin) {
-                        instrument.start(ScorePlayer._getFrequency(noteIndex), col * timeFactor);
+                        instrument.start(ScorePlayer._getFrequency(noteIndex), columnsToSecondsConvertor.convertForwards(column));
                     }
                     if (command.doEnd) {
-                        instrument.stop(ScorePlayer._getFrequency(noteIndex), (col + .999) * timeFactor);
-                        playDuration = Math.max(playDuration, (col + .999) * timeFactor);
+                        let endTime = columnsToSecondsConvertor.convertForwards(column + .999);
+                        instrument.stop(ScorePlayer._getFrequency(noteIndex), endTime);
+                        playDurationFinder.accept(endTime);
                     }
                 }
             }
@@ -94,6 +101,8 @@ export class ScorePlayer {
                 instrument.start(ScorePlayer._getFrequency(noteIndex), 0);
             }
         }
+
+        const playDuration = playDurationFinder.get();
 
         const currTimeout = this.#currTimeout = setTimeout(() => {
             this.stopPlaying();
@@ -104,10 +113,10 @@ export class ScorePlayer {
         const frame = () => {
             let elapsedTimeSeconds = getCurrTimeSeconds() - startTime;
 
-            el.scrollLeft = (elapsedTimeSeconds / timeFactor + columnOffset) * NOTE_WIDTH + NOTES_LEFT_MARGIN;
+            el.scrollLeft = timeToScrollAmountConvertor.convertForwards(elapsedTimeSeconds);
 
-            if (elapsedTimeSeconds > playDuration) {
-                el.scrollLeft = (playDuration / timeFactor + columnOffset) * NOTE_WIDTH + NOTES_LEFT_MARGIN;
+            if (elapsedTimeSeconds > playDurationFinder.get()) {
+                el.scrollLeft = timeToScrollAmountConvertor.convertForwards(elapsedTimeSeconds);
             }
 
             if (this.#isPlaying && this.#currTimeout === currTimeout) {

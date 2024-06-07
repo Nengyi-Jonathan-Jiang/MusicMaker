@@ -2,7 +2,7 @@ import {ScoreData} from "@/app/logic/scoreData";
 import {ScorePlayer} from "@/app/logic/scorePlayer";
 import {createArray} from "@/app/lib/util";
 import {Instrument} from "@/app/logic/instrument";
-import {InstrumentCommand} from "@/app/logic/instrumentData";
+import {VoiceCommand} from "@/app/logic/voiceData";
 
 export class ScoreEditor {
 
@@ -87,11 +87,11 @@ export class ScoreEditor {
         return this._scorePlayer.isPlaying;
     }
 
-    get instrumentForActiveVoice() {
-        return this._scorePlayer.getInstrument(this.activeVoice).name;
+    get instrumentForActiveVoice() : Instrument {
+        return this._scorePlayer.getInstrument(this.activeVoice);
     }
 
-    set instrumentForActiveVoice(instrumentName) {
+    set instrumentForActiveVoice(instrumentName : string) {
         this._scorePlayer.setInstrument(this.activeVoice, new Instrument(instrumentName));
     }
 
@@ -157,44 +157,44 @@ export class ScoreEditor {
             case "hold-start":
                 if (this._getCommandForActiveVoice(col - 1, note) !== 0) {
                     switch (currCommand) {
-                        case InstrumentCommand.BEGIN:
-                            newCommand = InstrumentCommand.HOLD;
+                        case VoiceCommand.BeginNote:
+                            newCommand = VoiceCommand.HoldNote;
                             break;
-                        case InstrumentCommand.DOT:
-                            newCommand = InstrumentCommand.END;
+                        case VoiceCommand.ShortNote:
+                            newCommand = VoiceCommand.EndNote;
                             break;
                     }
                     break;
                 }
             case "start":
                 switch (currCommand) {
-                    case InstrumentCommand.END:
-                        newCommand = InstrumentCommand.DOT;
+                    case VoiceCommand.EndNote:
+                        newCommand = VoiceCommand.ShortNote;
                         break;
-                    case InstrumentCommand.HOLD:
-                        newCommand = InstrumentCommand.BEGIN;
+                    case VoiceCommand.HoldNote:
+                        newCommand = VoiceCommand.BeginNote;
                         break;
                 }
                 break;
             case "hold-end":
                 if (this._getCommandForActiveVoice(col + 1, note) !== 0) {
                     switch (currCommand) {
-                        case InstrumentCommand.END:
-                            newCommand = InstrumentCommand.HOLD;
+                        case VoiceCommand.EndNote:
+                            newCommand = VoiceCommand.HoldNote;
                             break;
-                        case InstrumentCommand.DOT:
-                            newCommand = InstrumentCommand.BEGIN;
+                        case VoiceCommand.ShortNote:
+                            newCommand = VoiceCommand.BeginNote;
                             break;
                     }
                     break;
                 }
             case "end":
                 switch (currCommand) {
-                    case InstrumentCommand.BEGIN:
-                        newCommand = InstrumentCommand.DOT;
+                    case VoiceCommand.BeginNote:
+                        newCommand = VoiceCommand.ShortNote;
                         break;
-                    case InstrumentCommand.HOLD:
-                        newCommand = InstrumentCommand.END;
+                    case VoiceCommand.HoldNote:
+                        newCommand = VoiceCommand.EndNote;
                         break;
                 }
                 break;
@@ -210,7 +210,7 @@ export class ScoreEditor {
 
     _writeRange(startCol: number, endCol: number, note: number) {
         for (let col = startCol; col <= endCol; col++) {
-            this._setCommandForActiveVoice(col, note, InstrumentCommand.HOLD);
+            this._setCommandForActiveVoice(col, note, VoiceCommand.HoldNote);
         }
     }
 
