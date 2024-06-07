@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/../MusicMaker-Prototype/.idea/MusicMaker-Prototype.iml" filepath="$PROJECT_DIR$/../MusicMaker-Prototype/.idea/MusicMaker-Prototype.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/MusicMaker.iml" filepath="$PROJECT_DIR$/.idea/MusicMaker.iml" />
     </modules>
   </component>
 </project>

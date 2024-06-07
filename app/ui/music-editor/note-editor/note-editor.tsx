@@ -5,7 +5,7 @@ import React, {memo, RefObject, useContext, useEffect, useRef, useState} from "r
 import {arraysEqual, createArray, useListenerOnWindow} from "@/app/lib/util";
 import {InstrumentCommand} from "@/app/logic/instrumentData";
 import {ScoreEditorContext} from "@/app/ui/music-editor/musicEditor";
-import {LazyLoader} from "@/app/ui/lazyLoader";
+import {RenderWhenVisible} from "@/app/ui/renderWhenVisible";
 
 export function NoteEditor() {
     const editor = useContext(ScoreEditorContext) as ScoreEditor;
@@ -50,11 +50,11 @@ export function NoteEditor() {
             key={`note-name-${i}`}></span>)} </div>
         <div id="piano-notes">
             {createArray(scoreData.length, i =>
-                <LazyLoader key={i} placeholderSupplier={
+                <RenderWhenVisible key={i} placeholderSupplier={
                     (ref : RefObject<HTMLDivElement>) => <div className={"piano-notes-column piano-notes-column-placeholder"} ref={ref}></div>
                 }>
                     <NoteEditorColumn columnIndex={i}/>
-                </LazyLoader>
+                </RenderWhenVisible>
             )}
         </div>
         <div id="piano-notes-end-space"></div>

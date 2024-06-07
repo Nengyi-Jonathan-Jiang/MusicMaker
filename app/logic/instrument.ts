@@ -1,6 +1,6 @@
 import * as Tone from "tone";
 import {Sampler, SamplerOptions} from "tone";
-import {instrumentData, instruments} from "@/public/audio/instruments";
+import {instrumentData} from "@/public/audio/allInstruments";
 import {AsyncTask} from "@/app/lib/util";
 
 export class Instrument {

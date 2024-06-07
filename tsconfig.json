@@ -27,7 +27,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "public/audio/instruments"
+    "public/audio/allInstruments"
   ],
   "exclude": ["node_modules"]
 }

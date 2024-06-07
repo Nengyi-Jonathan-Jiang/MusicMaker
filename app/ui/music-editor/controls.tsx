@@ -2,7 +2,7 @@ import {ScoreEditor} from "@/app/logic/scoreEditor";
 import React, {useContext, useEffect, useState} from "react";
 import {createArray, useManualRerender} from "@/app/lib/util";
 import {ScoreData} from "@/app/logic/scoreData";
-import {instrumentData} from "@/public/audio/instruments";
+import {instrumentData} from "@/public/audio/allInstruments";
 
 import './controls.css';
 import {ScoreEditorContext} from "@/app/ui/music-editor/musicEditor";

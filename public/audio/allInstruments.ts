@@ -1,4 +1,4 @@
-import {AsyncTask, AsyncTaskWithDefault} from "@/app/lib/util";
+import {AsyncTask} from "@/app/lib/util";
 import {Sampler, SamplerOptions, ToneAudioBuffer} from "tone";
 
 const instrumentsStr = `
@@ -127,12 +127,20 @@ Oboe :
 	audio/oboe/Oboe-F#3.wav
 ;
 Clarinet :
-    audio/clarinet/Clarinet-A#3.wav
-    audio/clarinet/Clarinet-A#4.wav
-    audio/clarinet/Clarinet-A#5.wav
-    audio/clarinet/Clarinet-E4.wav
-    audio/clarinet/Clarinet-E5.wav
-    audio/clarinet/Clarinet-F3.wav
+	audio/clarinet/Cl_050.wav
+	audio/clarinet/Cl_052.wav
+	audio/clarinet/Cl_054.wav
+	audio/clarinet/Cl_055.wav
+	audio/clarinet/Cl_056.wav
+	audio/clarinet/Cl_059.wav
+	audio/clarinet/Cl_063.wav
+	audio/clarinet/Cl_065.wav
+	audio/clarinet/Cl_067.wav
+	audio/clarinet/Cl_068.wav
+	audio/clarinet/Cl_076.wav
+	audio/clarinet/Cl_077.wav
+	audio/clarinet/Cl_082.wav
+	audio/clarinet/Cl_084.wav
 ;   
 Bassoon :
     audio/bassoon/Bassoon-A#3.wav
@@ -176,32 +184,11 @@ Tuba :
     audio/tuba/Tuba-F#1.wav
 `;
 
-const rawInstrumentsData: { instrumentName: string; paths: string[] }[] = instrumentsStr.trim().split(/\s*;\s*/g)
-    .map(i => i.split(/\s*:\s*/g))
-    .map(([instrumentName, instrumentSourcesStr]) => ({
-        instrumentName,
-        paths: instrumentSourcesStr.split(/\s*\n\s*/g)
-    }));
-
-function getNoteName(path : string) : string {
-    let noteNameMatch = path.match(/[A-Ga-g][s|#]?\d/) as RegExpMatchArray;
-    return noteNameMatch[0].toUpperCase().replaceAll(/[sS]/g, '#');
+function getNoteName(path : string) : string | number {
+    const noteNameMatch = path.match(/[A-Ga-g][s#]?\d|\d\d\d/) as RegExpMatchArray;
+    const str = noteNameMatch[0].toUpperCase().replaceAll(/[sS]/g, '#');
+    return isNaN(+str) ? str : +str;
 }
-
-export const instruments = new Map(
-    rawInstrumentsData
-        .map(({instrumentName, paths}) => [
-            instrumentName,
-            {
-                urls: paths.map(path => ({
-                    [getNoteName(path)]: path
-                })).reduce((a, b) => ({...a, ...b}), {}),
-                baseUrl: ""
-            }
-        ])
-);
-
-// noinspection SpellCheckingInspection
 
 /**
  * Copied from the internal type definitions of Tone.js. I'm not sure why this is not exposed.
@@ -223,9 +210,9 @@ export const instrumentData: Map<string, AsyncTask<Partial<SamplerOptions>>> = n
         instrumentName,
         new AsyncTask(async () => ({
             urls: (await Promise.all(
-                paths.map(async path => ({
-                    [getNoteName(path)]: await new ToneAudioBuffer().load(path)
-                }))
+                paths.map(async path => Object.fromEntries(
+                    [[getNoteName(path), await new ToneAudioBuffer().load(path)]]
+                ))
             )).reduce((a: SamplesMap, b) : SamplesMap => ({...a, ...b}), {})
         }), true)
     ])
