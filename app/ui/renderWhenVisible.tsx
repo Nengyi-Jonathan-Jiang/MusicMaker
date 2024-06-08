@@ -10,7 +10,7 @@ const observer = new IntersectionObserver((entries) => {
             callBack(isIntersecting);
         }
     })
-});
+}, {rootMargin: "200px"});
 
 function addObservedElement(element : Element, callback : (isIntersecting: boolean) => void){
     observationCallbacks.set(element, callback);

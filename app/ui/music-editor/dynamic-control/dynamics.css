@@ -1,0 +1,24 @@
+/*#dynamic-control {*/
+/*    min-height: 100px;*/
+/*    height: 100px;*/
+/*    display: flex;*/
+/*    overflow-x: scroll;*/
+/*    background-color: var(--bg-color-light);*/
+/*    margin-top: 10px;*/
+/*}*/
+
+/*#dynamic-control-left {*/
+/*    position: sticky;*/
+/*    left: 0;*/
+/*    min-width: 130px;*/
+/*    margin-right: 10px;*/
+/*    border-left: 10px solid var(--bg-color-light);*/
+/*    background-color: var(--medium-color);*/
+/*}*/
+
+/*.dynamics-column, .dynamic-column-placeholder {*/
+/*    display: block;*/
+/*    min-width: 12px;*/
+/*    margin-right: 2px;*/
+/*    background-color: var(--bg-color-dark);*/
+/*}*/

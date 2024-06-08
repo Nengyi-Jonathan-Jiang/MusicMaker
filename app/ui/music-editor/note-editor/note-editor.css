@@ -9,10 +9,6 @@
     font-size:        20px;
 }
 
-#notes-editor::-webkit-scrollbar {
-    display: none;
-}
-
 #piano-note-names::before {
     content:          "";
     display:          block;
@@ -37,7 +33,7 @@
 
     left:           0;
 
-    z-index:        1000;
+    z-index:        4;
 }
 
 #piano-note-names::after {
@@ -192,10 +188,6 @@
     user-select:    none;
 }
 
-#piano-notes::-webkit-scrollbar {
-    display: none;
-}
-
 .piano-notes-column {
     position: relative;
     margin-right: 2px;
@@ -213,7 +205,7 @@
 
 .piano-notes-column::before {
     counter-increment: measure-number;
-    z-index:           100;
+    z-index:           3;
     display:           block;
     width:             50px;
     height:            20px;

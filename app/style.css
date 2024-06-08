@@ -16,6 +16,10 @@ canvas {
     font-size: 13pt;
 }
 
+::-webkit-scrollbar {
+    display: none;
+}
+
 
 #music-editor {
     width: 100%;

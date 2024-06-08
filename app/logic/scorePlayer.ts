@@ -6,9 +6,6 @@ import {ScoreData} from "@/app/logic/scoreData";
 import {LinearValueConvertor, ValueConvertor} from "@/app/lib/valueConvertor";
 import {MaximumNumberFinder} from "@/app/lib/minMax";
 
-const NOTE_WIDTH = 14;
-const NOTES_LEFT_MARGIN = 8;
-
 const columnsToScrollAmountConvertor = new LinearValueConvertor(14, 8);
 const columnsToBeatsConvertor = new LinearValueConvertor(1 / 6);
 

@@ -1,5 +1,7 @@
 import React, {RefObject, useContext} from "react";
 
+import './dynamics.css'
+
 import {ScoreEditorContext} from "@/app/ui/music-editor/musicEditor";
 import {ScoreEditor} from "@/app/logic/scoreEditor";
 import {createArray} from "@/app/lib/util";
