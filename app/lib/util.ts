@@ -65,8 +65,3 @@ export function useListenerOnWindow<K extends keyof WindowEventMap>(
         }
     }, dependencies ?? []);
 }
-
-export function getCurrTimeSeconds(): number {
-    return Date.now() / 1000;
-}
-

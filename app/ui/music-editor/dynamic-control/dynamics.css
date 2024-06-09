@@ -1,24 +1,118 @@
-/*#dynamic-control {*/
-/*    min-height: 100px;*/
-/*    height: 100px;*/
-/*    display: flex;*/
-/*    overflow-x: scroll;*/
-/*    background-color: var(--bg-color-light);*/
-/*    margin-top: 10px;*/
-/*}*/
+#dynamic-control {
+    min-height: 160px;
+    height: 160px;
+    display: flex;
+    overflow-x: scroll;
+    background-color: var(--bg-color-light);
+    margin-top: 10px;
+    padding: 10px 0;
+    position: relative;
+}
 
-/*#dynamic-control-left {*/
-/*    position: sticky;*/
-/*    left: 0;*/
-/*    min-width: 130px;*/
-/*    margin-right: 10px;*/
-/*    border-left: 10px solid var(--bg-color-light);*/
-/*    background-color: var(--medium-color);*/
-/*}*/
+#dynamic-control-left {
+    position: sticky;
+    left: 0;
+    min-width: 130px;
+    margin-right: 20px;
+    border-left: 10px solid var(--bg-color-light);
+    background-color: var(--medium-color);
+    z-index: 5;
+}
 
-/*.dynamics-column, .dynamic-column-placeholder {*/
-/*    display: block;*/
-/*    min-width: 12px;*/
-/*    margin-right: 2px;*/
-/*    background-color: var(--bg-color-dark);*/
-/*}*/
+.dynamics-column, .dynamic-column-placeholder {
+    min-width: 12px;
+    margin-right: 2px;
+}
+
+.dynamics-column {
+    background-color: var(--bg-color-dark);
+    position: relative;
+}
+
+.dynamics-column::after {
+    position:     absolute;
+    top:          0;
+    left:         -2px;
+    display:      block;
+    width:        0;
+    height:       100%;
+    border-right: 2px solid var(--medium-color);
+}
+
+#dynamic-control-content {
+    display: flex;
+    width: fit-content;
+}
+
+#controls:is(
+    [data-time-signature="4+0"],
+    [data-time-signature="3+0"],
+    [data-time-signature="2+0"],
+    [data-time-signature="4+1"],
+    [data-time-signature="3+1"],
+    [data-time-signature="2+1"],
+    [data-time-signature="4+2"],
+    [data-time-signature="3+2"],
+    [data-time-signature="2+2"]
+) ~ * .dynamics-column:nth-child(6n + 1)::after ,
+#controls:is(
+    [data-time-signature="6+0"],
+    [data-time-signature="9+0"],
+    [data-time-signature="12+0"],
+    [data-time-signature="6+1"],
+    [data-time-signature="9+1"],
+    [data-time-signature="12+1"],
+    [data-time-signature="6+2"],
+    [data-time-signature="9+2"],
+    [data-time-signature="12+2"]
+) ~ * .dynamics-column:nth-child(2n + 1)::after {
+    content:            "";
+}
+
+#controls[data-time-signature="2+0"] ~ * .dynamics-column:nth-child(12n + 1)::after,
+#controls[data-time-signature="6+0"] ~ * .dynamics-column:nth-child(12n + 1)::after,
+#controls[data-time-signature="3+0"] ~ * .dynamics-column:nth-child(18n + 1)::after,
+#controls[data-time-signature="9+0"] ~ * .dynamics-column:nth-child(18n + 1)::after,
+#controls[data-time-signature="4+0"] ~ * .dynamics-column:nth-child(24n + 1)::after,
+#controls[data-time-signature="12+0"] ~ * .dynamics-column:nth-child(24n + 1)::after,
+#controls[data-time-signature="2+1"] ~ * .dynamics-column:nth-child(12n + 7)::after,
+#controls[data-time-signature="6+1"] ~ * .dynamics-column:nth-child(12n + 7)::after,
+#controls[data-time-signature="3+1"] ~ * .dynamics-column:nth-child(18n + 7)::after,
+#controls[data-time-signature="9+1"] ~ * .dynamics-column:nth-child(18n + 7)::after,
+#controls[data-time-signature="4+1"] ~ * .dynamics-column:nth-child(24n + 7)::after,
+#controls[data-time-signature="12+1"] ~ * .dynamics-column:nth-child(24n + 7)::after,
+#controls[data-time-signature="2+2"] ~ * .dynamics-column:nth-child(12n + 13)::after,
+#controls[data-time-signature="6+2"] ~ * .dynamics-column:nth-child(12n + 13)::after,
+#controls[data-time-signature="3+2"] ~ * .dynamics-column:nth-child(18n + 13)::after,
+#controls[data-time-signature="9+2"] ~ * .dynamics-column:nth-child(18n + 13)::after,
+#controls[data-time-signature="4+2"] ~ * .dynamics-column:nth-child(24n + 13)::after,
+#controls[data-time-signature="12+2"] ~ * .dynamics-column:nth-child(24n + 13)::after{
+    border-right-color: var(--highlight-color)
+}
+
+
+.dynamics-marking, .dynamics-crescendo, .dynamics-decrescendo {
+    position: absolute;
+    z-index: 2;
+}
+
+.dynamics-marking {
+    height: 20px;
+    user-select: none;
+    display: flex;
+    align-items: center;
+}
+
+.dynamics-value {
+    font-size: 11px;
+    font-family: 'Leland Text', 'Nunito', sans-serif;
+    transform: translateX(-50%);
+    text-shadow:       0 0 5px var(--bg-color-dark), 0 0 5px var(--bg-color-dark), 0 0 5px var(--bg-color-dark);
+}
+
+#dynamic-control .voice-1 { top: 0; }
+#dynamic-control .voice-2 { top: 24px; }
+#dynamic-control .voice-3 { top: 48px; }
+#dynamic-control .voice-4 { top: 72px; }
+#dynamic-control .voice-5 { top: 96px; }
+#dynamic-control .voice-6 { top: 120px; }

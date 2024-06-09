@@ -18,10 +18,20 @@ type ScrollSyncerOptions = {
     syncY?: boolean
 };
 
-export class ScrollPane {
-    readonly #element: HTMLElement;
+export type ScrollableElement = {
+    readonly scrollWidth: number,
+    readonly scrollHeight: number,
+    readonly clientWidth: number,
+    readonly clientHeight: number,
+    scrollLeft: number,
+    scrollTop: number,
+    onscroll: ((ev: Event) => any) | null
+}
 
-    constructor(element: HTMLElement) {
+export class ScrollPane<ElementType extends ScrollableElement = any> {
+    readonly #element: ElementType;
+
+    constructor(element: ElementType) {
         this.#element = element;
     }
 
@@ -65,7 +75,7 @@ export class ScrollPane {
         this.element.scrollTop = clamp(proportion, 0, 1) * this.scrollableAmountY;
     }
 
-    get element() {
+    get element() : ElementType {
         return this.#element;
     }
 }
@@ -91,19 +101,19 @@ abstract class AbstractScrollSyncer implements IScrollSyncer {
     protected abstract syncX(sourcePane: ScrollPane, destPane: ScrollPane) : void;
 
     #handlePaneScroll(pane: ScrollPane) {
-        window.requestAnimationFrame(() => {
-            this.#panes.forEach(i => {
-                if (i !== pane) {
-                    this.#syncScrollPosition(pane, i);
-                }
-            });
-        })
+        this.#panes.forEach(i => {
+            if (i !== pane) {
+                this.#syncScrollPosition(pane, i);
+            }
+        });
     }
 
     registerPane(pane: ScrollPane) {
         if (this.#panes.size > 0) {
             this.#syncScrollPosition(getFirstElementFromSet(this.#panes), pane);
         }
+
+        this.#panes.add(pane);
 
         pane.element.onscroll = () => {
             this.#handlePaneScroll(pane);

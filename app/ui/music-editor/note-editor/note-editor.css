@@ -1,7 +1,6 @@
 #notes-editor {
     display:          flex;
     padding:          10px;
-    border-bottom:    1px solid var(--bg-color-dark);
     background-color: var(--bg-color-light);
     flex-grow:        1;
     overflow:         scroll;
@@ -24,7 +23,7 @@
     width:          6em;
     min-width:      6em;
     counter-reset:  octave 8;
-    margin-right:   10px;
+    margin-right:   20px;
 
     display:        flex;
     flex-direction: column;
@@ -189,7 +188,7 @@
 }
 
 .piano-notes-column {
-    position: relative;
+    position:     relative;
     margin-right: 2px;
 }
 
@@ -262,28 +261,8 @@
     margin-bottom: 2px;
 }
 
-.piano-notes-key > .voice-1 {
-    background-color: var(--voice-1-color)
-}
-
-.piano-notes-key > .voice-2 {
-    background-color: var(--voice-2-color)
-}
-
-.piano-notes-key > .voice-3 {
-    background-color: var(--voice-3-color)
-}
-
-.piano-notes-key > .voice-4 {
-    background-color: var(--voice-4-color)
-}
-
-.piano-notes-key > .voice-5 {
-    background-color: var(--voice-5-color)
-}
-
-.piano-notes-key > .voice-6 {
-    background-color: var(--voice-6-color)
+.piano-notes-key > span {
+    background: currentColor;
 }
 
 #piano-notes-end-space {
@@ -305,10 +284,7 @@
     [data-time-signature="4+2"],
     [data-time-signature="3+2"],
     [data-time-signature="2+2"]
-) + * .piano-notes-column:nth-child(6n + 1)::after {
-    content: "";
-}
-
+) + * .piano-notes-column:nth-child(6n + 1)::after,
 #controls:is(
     [data-time-signature="6+0"],
     [data-time-signature="9+0"],
@@ -320,8 +296,7 @@
     [data-time-signature="9+2"],
     [data-time-signature="12+2"]
 ) + * .piano-notes-column:nth-child(2n + 1)::after {
-    content:            "";
-    border-right-color: var(--medium-color);
+    content: "";
 }
 
 #controls[data-time-signature="2+0"] + * .piano-notes-column:nth-child(12n + 1)::after,
@@ -341,7 +316,7 @@
 #controls[data-time-signature="3+2"] + * .piano-notes-column:nth-child(18n + 13)::after,
 #controls[data-time-signature="9+2"] + * .piano-notes-column:nth-child(18n + 13)::after,
 #controls[data-time-signature="4+2"] + * .piano-notes-column:nth-child(24n + 13)::after,
-#controls[data-time-signature="12+2"] + * .piano-notes-column:nth-child(24n + 13)::after{
+#controls[data-time-signature="12+2"] + * .piano-notes-column:nth-child(24n + 13)::after {
     border-right-color: var(--highlight-color)
 }
 
@@ -362,14 +337,13 @@
 #controls[data-time-signature="3+2"] + * .piano-notes-column:nth-child(18n + 13)::before,
 #controls[data-time-signature="9+2"] + * .piano-notes-column:nth-child(18n + 13)::before,
 #controls[data-time-signature="4+2"] + * .piano-notes-column:nth-child(24n + 13)::before,
-#controls[data-time-signature="12+2"] + * .piano-notes-column:nth-child(24n + 13)::before{
+#controls[data-time-signature="12+2"] + * .piano-notes-column:nth-child(24n + 13)::before {
     content: counter(measure-number);
 }
 
 
-
 .piano-notes-column-placeholder {
     display: block;
-    width: 12px;
-    height: 2110px;
+    width:   12px;
+    height:  2110px;
 }

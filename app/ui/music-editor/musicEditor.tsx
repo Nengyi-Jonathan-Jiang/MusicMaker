@@ -11,7 +11,7 @@ export const ScoreEditorContext = React.createContext<ScoreEditor | null>(null);
 
 export function MusicEditor() {
     const [scoreEditor] = useState(() => new ScoreEditor(6 * 4 * 64));
-    const [scrollSyncer] = useState(() => new AbsoluteScrollSyncer());
+    const [scrollSyncer] = useState(() => new AbsoluteScrollSyncer({syncY: false}));
 
 
 

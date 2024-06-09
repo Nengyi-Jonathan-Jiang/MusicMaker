@@ -2,7 +2,10 @@ import {ScoreData} from "@/app/logic/scoreData";
 import {ScorePlayer} from "@/app/logic/scorePlayer";
 import {createArray} from "@/app/lib/util";
 import {Instrument} from "@/app/logic/instrument";
-import {VoiceCommand} from "@/app/logic/voiceData";
+import {DynamicsCommand, NoteCommand} from "@/app/logic/voiceData";
+import {IScrollSyncer} from "@/app/lib/scrollSync";
+
+// TODO: split this up
 
 export class ScoreEditor {
 
@@ -75,8 +78,8 @@ export class ScoreEditor {
         return col - (col % this._snapInterval) + this._snapInterval - 1;
     }
 
-    playScore(el: HTMLDivElement) {
-        this._scorePlayer.playAll(this.scoreData, el);
+    playScore(syncer: IScrollSyncer) {
+        this._scorePlayer.playAll(this.scoreData, syncer);
     }
 
     stopPlayScore() {
@@ -94,6 +97,22 @@ export class ScoreEditor {
     set instrumentForActiveVoice(instrumentName : string) {
         this._scorePlayer.setInstrument(this.activeVoice, new Instrument(instrumentName));
     }
+
+    get activeVoiceData() {
+        return this._scoreData.noteData[this.activeVoice];
+    }
+
+    // setCrescendo(column: number) {
+    //     this._scoreData.noteData[this.activeVoice].setDynamicCommand(column, DynamicsCommand.Crescendo);
+    // }
+    //
+    // setCrescendo(column: number) {
+    //     this._scoreData.noteData[this.activeVoice].setDynamicCommand(column, DynamicsCommand.Crescendo);
+    // }
+    //
+    // eraseDynamicCommand(column: number) {
+    //     this._scoreData.noteData[this.activeVoice].setDynamicCommand(column, DynamicsCommand.Crescendo);
+    // }
 
     startInteraction(columnIndex: number, noteIndex: number, interactionType: 'blend' | 'write' | 'erase') {
         this.interaction = interactionType;
@@ -125,8 +144,8 @@ export class ScoreEditor {
             return;
         }
 
-        const oldCommand = this.scoreData.noteData[this.activeVoice].getCommand(columnIndex, noteIndex).command;
-        this.scoreData.noteData[this.activeVoice].setCommand(columnIndex, noteIndex, command);
+        const oldCommand = this.scoreData.noteData[this.activeVoice].getNoteCommand(columnIndex, noteIndex).command;
+        this.scoreData.noteData[this.activeVoice].setNoteCommand(columnIndex, noteIndex, command);
         if (command !== oldCommand) {
             this._pendingUIUpdates.push({columnIndex, noteIndex});
         }
@@ -136,7 +155,7 @@ export class ScoreEditor {
         if (columnIndex < 0 || columnIndex >= this.scoreData.length || noteIndex < 0 || noteIndex >= ScoreData.NUM_NOTES) {
             return 0;
         }
-        return this.scoreData.noteData[this.activeVoice].getCommand(columnIndex, noteIndex).command;
+        return this.scoreData.noteData[this.activeVoice].getNoteCommand(columnIndex, noteIndex).command;
     }
 
     _applyUIUpdates() {
@@ -157,44 +176,44 @@ export class ScoreEditor {
             case "hold-start":
                 if (this._getCommandForActiveVoice(col - 1, note) !== 0) {
                     switch (currCommand) {
-                        case VoiceCommand.BeginNote:
-                            newCommand = VoiceCommand.HoldNote;
+                        case NoteCommand.BeginNote:
+                            newCommand = NoteCommand.HoldNote;
                             break;
-                        case VoiceCommand.ShortNote:
-                            newCommand = VoiceCommand.EndNote;
+                        case NoteCommand.ShortNote:
+                            newCommand = NoteCommand.EndNote;
                             break;
                     }
                     break;
                 }
             case "start":
                 switch (currCommand) {
-                    case VoiceCommand.EndNote:
-                        newCommand = VoiceCommand.ShortNote;
+                    case NoteCommand.EndNote:
+                        newCommand = NoteCommand.ShortNote;
                         break;
-                    case VoiceCommand.HoldNote:
-                        newCommand = VoiceCommand.BeginNote;
+                    case NoteCommand.HoldNote:
+                        newCommand = NoteCommand.BeginNote;
                         break;
                 }
                 break;
             case "hold-end":
                 if (this._getCommandForActiveVoice(col + 1, note) !== 0) {
                     switch (currCommand) {
-                        case VoiceCommand.EndNote:
-                            newCommand = VoiceCommand.HoldNote;
+                        case NoteCommand.EndNote:
+                            newCommand = NoteCommand.HoldNote;
                             break;
-                        case VoiceCommand.ShortNote:
-                            newCommand = VoiceCommand.BeginNote;
+                        case NoteCommand.ShortNote:
+                            newCommand = NoteCommand.BeginNote;
                             break;
                     }
                     break;
                 }
             case "end":
                 switch (currCommand) {
-                    case VoiceCommand.BeginNote:
-                        newCommand = VoiceCommand.ShortNote;
+                    case NoteCommand.BeginNote:
+                        newCommand = NoteCommand.ShortNote;
                         break;
-                    case VoiceCommand.HoldNote:
-                        newCommand = VoiceCommand.EndNote;
+                    case NoteCommand.HoldNote:
+                        newCommand = NoteCommand.EndNote;
                         break;
                 }
                 break;
@@ -210,7 +229,7 @@ export class ScoreEditor {
 
     _writeRange(startCol: number, endCol: number, note: number) {
         for (let col = startCol; col <= endCol; col++) {
-            this._setCommandForActiveVoice(col, note, VoiceCommand.HoldNote);
+            this._setCommandForActiveVoice(col, note, NoteCommand.HoldNote);
         }
     }
 
@@ -253,4 +272,10 @@ export class ScoreEditor {
             }
         }
     }
+}
+
+export enum ScoreEditorInteractionType {
+    BlendNote,
+    EraseNote,
+    WriteNote,
 }

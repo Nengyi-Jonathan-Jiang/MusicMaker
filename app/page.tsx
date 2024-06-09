@@ -1,11 +1,18 @@
+"use client"
+
 import './ui.css'
 import './style.css'
 
-import React from "react";
+import React, {useEffect} from "react";
 import LoadingScreen from "@/app/ui/loadingScreen";
 import {MusicEditor} from "@/app/ui/music-editor/musicEditor";
+import {eventsHelper} from "@/app/lib/eventsHelper";
 
 export default function Page() {
+    useEffect(() => {
+        eventsHelper.initializeFor(window);
+    }, []);
+
     return (
         <div id="main">
             <LoadingScreen>

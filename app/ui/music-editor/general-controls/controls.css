@@ -6,6 +6,7 @@
     margin-bottom: 10px;
     z-index: 5;
     user-select: none;
+    max-height: 54px;
 }
 
 #controls>.controls-section {
@@ -31,6 +32,10 @@
 
 #controls-section-middle {
     flex-grow: 1;
+}
+
+#controls-section-middle::before {
+    margin-right: -11px !important;
 }
 
 #controls :is(button,input) {

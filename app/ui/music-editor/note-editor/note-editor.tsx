@@ -3,11 +3,14 @@ import './note-editor.css'
 import {ScoreEditor} from "@/app/logic/scoreEditor";
 import React, {memo, RefObject, useContext, useEffect, useRef, useState} from "react";
 import {arraysEqual, createArray, useListenerOnWindow} from "@/app/lib/util";
-import {VoiceCommand} from "@/app/logic/voiceData";
+import {NoteCommand} from "@/app/logic/voiceData";
 import {ScoreEditorContext} from "@/app/ui/music-editor/musicEditor";
 import {RenderWhenVisible} from "@/app/ui/renderWhenVisible";
+import {ScrollPane, ScrollSyncContext} from "@/app/lib/scrollSync";
 
 export function NoteEditor() {
+    const scrollSyncer = useContext(ScrollSyncContext);
+
     const editor = useContext(ScoreEditorContext) as ScoreEditor;
 
     const scoreData = editor.scoreData;
@@ -23,14 +26,15 @@ export function NoteEditor() {
             if (editor.isPlaying) {
                 editor.stopPlayScore();
             } else if (containerRef.current !== null) {
-                editor.playScore(containerRef.current);
+                editor.playScore(scrollSyncer);
             }
 
             e.preventDefault();
             e.stopPropagation();
         }
-        if (e.key === 'R' && e.altKey) {
+        if (e.key === 'R' && e.ctrlKey) {
             editor.clearScore();
+            e.preventDefault();
         }
     }
 
@@ -40,8 +44,14 @@ export function NoteEditor() {
     useListenerOnWindow(window, 'mouseleave', onInteractionEnd);
 
     useEffect(() => {
-        if (containerRef.current !== null) {
-            containerRef.current.scrollTop = 610;
+        if (containerRef.current === null) return;
+
+        containerRef.current.scrollTop = 610;
+        const pane = new ScrollPane(containerRef.current);
+        scrollSyncer.registerPane(pane);
+
+        return () => {
+            scrollSyncer.unregisterPane(pane);
         }
     });
 
@@ -61,7 +71,7 @@ export function NoteEditor() {
     </div>);
 }
 
-const NoteEditorKeyDisplay = memo(function NoteEditorKeyDisplay({commands}: { commands: VoiceCommand[] }) {
+const NoteEditorKeyDisplay = memo(function NoteEditorKeyDisplay({commands}: { commands: NoteCommand[] }) {
     return <>{
         commands.map((command, i) =>
             [
@@ -73,7 +83,7 @@ const NoteEditorKeyDisplay = memo(function NoteEditorKeyDisplay({commands}: { co
             ][command]
         )
     }</>
-}, (a: {commands: VoiceCommand[]}, b: {commands: VoiceCommand[]}) => arraysEqual(a.commands, b.commands));
+}, (a: {commands: NoteCommand[]}, b: {commands: NoteCommand[]}) => arraysEqual(a.commands, b.commands));
 
 function NoteEditorKey({columnIndex, noteIndex}: {
     columnIndex: number,
@@ -86,7 +96,7 @@ function NoteEditorKey({columnIndex, noteIndex}: {
     editor.setUIUpdateCallback(columnIndex, noteIndex, () => setDummyState(dummyState + 1));
 
     const commands = editor.scoreData.noteData.map(data =>
-        data.getCommand(columnIndex, noteIndex).command
+        data.getNoteCommand(columnIndex, noteIndex).command
     );
 
     return (

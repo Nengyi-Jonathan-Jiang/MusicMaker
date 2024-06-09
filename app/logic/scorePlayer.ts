@@ -1,13 +1,41 @@
 import {Instrument} from "@/app/logic/instrument";
-import {createArray, getCurrTimeSeconds} from "@/app/lib/util";
-import {getTransport} from "tone";
+import {createArray} from "@/app/lib/util";
+import {getTransport, now} from "tone";
 import * as Constants from "@/app/logic/Constants";
 import {ScoreData} from "@/app/logic/scoreData";
 import {LinearValueConvertor, ValueConvertor} from "@/app/lib/valueConvertor";
 import {MaximumNumberFinder} from "@/app/lib/minMax";
+import {IScrollSyncer, ScrollableElement, ScrollPane} from "@/app/lib/scrollSync";
 
-const columnsToScrollAmountConvertor = new LinearValueConvertor(14, 8);
-const columnsToBeatsConvertor = new LinearValueConvertor(1 / 6);
+const columnsToScrollAmountConvertor = new LinearValueConvertor(14, 18);
+
+class DummyScrollElement implements ScrollableElement {
+    readonly clientHeight: 0 = 0;
+    clientWidth: 0 = 0;
+    onscroll: (() => any) | null = null;
+    scrollHeight: 0 = 0;
+    #scrollLeft : number;
+    scrollTop: 0 = 0;
+    scrollWidth: number;
+
+    constructor(score: ScoreData) {
+        this.#scrollLeft = 0;
+        this.scrollWidth = columnsToScrollAmountConvertor.convertForwards(score.length);
+    }
+
+    get scrollLeft() {
+        return this.#scrollLeft;
+    }
+
+    set scrollLeft(amount) {
+        this.#scrollLeft = amount;
+    }
+
+    setScroll(amount: number) {
+        this.scrollLeft = amount;
+        this.onscroll?.();
+    }
+}
 
 export class ScorePlayer {
     instruments: Instrument[];
@@ -50,14 +78,17 @@ export class ScorePlayer {
         clearTimeout(this.#currTimeout);
     }
 
-    playAll(score: ScoreData, el: HTMLDivElement) {
+    playAll(score: ScoreData, syncer: IScrollSyncer) {
         this.stopPlaying();
 
         getTransport().position = 0;
         getTransport().start();
         this.#isPlaying = true;
 
-        const currentColumn = columnsToScrollAmountConvertor.convertBackwards(el.scrollLeft);
+        const dummyScrollPane = new ScrollPane(new DummyScrollElement(score));
+        syncer.registerPane(dummyScrollPane);
+
+        const currentColumn = columnsToScrollAmountConvertor.convertBackwards(dummyScrollPane.scrollAmountX);
 
         const columnsToSecondsConvertor = new LinearValueConvertor(60 / score.bpm / 6, -currentColumn, true);
         const timeToScrollAmountConvertor = ValueConvertor.compose(ValueConvertor.invert(columnsToSecondsConvertor), columnsToScrollAmountConvertor);
@@ -71,7 +102,7 @@ export class ScorePlayer {
 
             for (let column = 0; column < score.length; column++) {
                 for (let noteIndex = 0; noteIndex < ScoreData.NUM_NOTES; noteIndex++) {
-                    const command = score.noteData[voice].getCommand(column, noteIndex);
+                    const command = score.noteData[voice].getNoteCommand(column, noteIndex);
 
                     if (column < currentColumn) {
                         if (command.doBegin) {
@@ -105,15 +136,16 @@ export class ScorePlayer {
             this.stopPlaying();
         }, playDuration * 1000);
 
-        const startTime = getCurrTimeSeconds();
+        const startTime = now();
 
         const frame = () => {
-            let elapsedTimeSeconds = getCurrTimeSeconds() - startTime;
+            let elapsedTimeSeconds = now() - startTime;
 
-            el.scrollLeft = timeToScrollAmountConvertor.convertForwards(elapsedTimeSeconds);
+            dummyScrollPane.element.setScroll(timeToScrollAmountConvertor.convertForwards(elapsedTimeSeconds));
 
             if (elapsedTimeSeconds > playDurationFinder.get()) {
-                el.scrollLeft = timeToScrollAmountConvertor.convertForwards(elapsedTimeSeconds);
+                dummyScrollPane.element.setScroll(timeToScrollAmountConvertor.convertForwards(elapsedTimeSeconds));
+                syncer.unregisterPane(dummyScrollPane);
             }
 
             if (this.#isPlaying && this.#currTimeout === currTimeout) {

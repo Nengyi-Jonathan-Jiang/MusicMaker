@@ -3,28 +3,49 @@ import {ScoreData} from "@/app/logic/scoreData";
 import {Instrument} from "@/app/logic/instrument";
 
 export class VoiceData {
-    readonly #data: VoiceCommand[][];
+    readonly #noteCommands: NoteCommand[][];
+    readonly #dynamicsCommands: DynamicsCommand[];
+    readonly #dynamicsValues: DynamicsValue[];
+
     #instrument: Instrument;
 
     constructor(length: number) {
         this.#instrument = new Instrument();
-        this.#data = createArray(length, () => createArray(ScoreData.NUM_NOTES, VoiceCommand.Empty));
+        this.#noteCommands = createArray(length, () => createArray(ScoreData.NUM_NOTES, NoteCommand.Empty));
+        this.#dynamicsCommands = createArray(length, DynamicsCommand.Empty);
+        this.#dynamicsValues = createArray(length, DynamicsValue.None);
     }
 
-    getCommand(column: number, noteIndex: number) {
-        const command = this.#data[column][noteIndex];
+    getNoteCommand(column: number, noteIndex: number) {
+        const command = this.#noteCommands[column][noteIndex];
         return {
-            doBegin: command === VoiceCommand.BeginNote || command === VoiceCommand.ShortNote,
-            doEnd: command === VoiceCommand.ShortNote || command === VoiceCommand.EndNote,
+            doBegin: command === NoteCommand.BeginNote || command === NoteCommand.ShortNote,
+            doEnd: command === NoteCommand.ShortNote || command === NoteCommand.EndNote,
             command
         }
     }
 
-    setCommand(column: number, note: number, command: VoiceCommand) {
-        this.#data[column][note] = command;
+    setNoteCommand(column: number, note: number, command: NoteCommand) {
+        this.#noteCommands[column][note] = command;
     }
 
-    get instrument() : Instrument {
+    getDynamicCommand(column: number) {
+        return this.#dynamicsCommands[column];
+    }
+
+    setDynamicCommand(column: number, value: DynamicsCommand) {
+        this.#dynamicsCommands[column] = value;
+    }
+
+    getDynamicValue(column: number) {
+        return this.#dynamicsValues[column];
+    }
+
+    setDynamicValue(column: number, value: DynamicsValue) {
+        this.#dynamicsValues[column] = value;
+    }
+
+    get instrument(): Instrument {
         return this.#instrument;
     }
 
@@ -33,10 +54,29 @@ export class VoiceData {
     }
 }
 
-export enum VoiceCommand {
+export enum NoteCommand {
     Empty,
     BeginNote,
     HoldNote,
     EndNote,
     ShortNote,
+}
+
+export enum DynamicsCommand {
+    Empty,
+    Crescendo,
+    Decrescendo,
+}
+
+export enum DynamicsValue {
+    None = '',
+
+    ff = 'ff',
+    f = 'f',
+    mf = 'mf',
+    mp = 'mp',
+    p = 'p',
+    pp = 'pp',
+
+    n = 'n',
 }
