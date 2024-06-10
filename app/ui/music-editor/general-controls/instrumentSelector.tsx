@@ -3,7 +3,7 @@ import {instrumentData} from "@/public/audio/allInstruments";
 import {AsyncTask} from "@/app/lib/asyncTask";
 import React, {useContext} from "react";
 import {ScoreEditorContext} from "@/app/ui/music-editor/musicEditor";
-import {ScoreEditor} from "@/app/logic/scoreEditor";
+import {ScoreEditor} from "@/app/logic/editor/scoreEditor";
 
 import './controls.css'
 import {Select} from "@/app/lib/select";

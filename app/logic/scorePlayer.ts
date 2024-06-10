@@ -7,7 +7,7 @@ import {LinearValueConvertor, ValueConvertor} from "@/app/lib/valueConvertor";
 import {MaximumNumberFinder} from "@/app/lib/minMax";
 import {IScrollSyncer, ScrollableElement, ScrollPane} from "@/app/lib/scrollSync";
 
-const columnsToScrollAmountConvertor = new LinearValueConvertor(14, 18);
+const columnsToScrollAmountConvertor = new LinearValueConvertor(14, 19);
 
 class DummyScrollElement implements ScrollableElement {
     readonly clientHeight: 0 = 0;
@@ -65,6 +65,8 @@ export class ScorePlayer {
     }
 
     stopPlaying() {
+        if(!this.isPlaying) return;
+
         this.instruments.forEach(i => {
             i.stopAll();
         });
@@ -134,6 +136,8 @@ export class ScorePlayer {
 
         const currTimeout = this.#currTimeout = setTimeout(() => {
             this.stopPlaying();
+            dummyScrollPane.element.setScroll(timeToScrollAmountConvertor.convertForwards(playDuration));
+            syncer.unregisterPane(dummyScrollPane);
         }, playDuration * 1000);
 
         const startTime = now();
@@ -144,8 +148,7 @@ export class ScorePlayer {
             dummyScrollPane.element.setScroll(timeToScrollAmountConvertor.convertForwards(elapsedTimeSeconds));
 
             if (elapsedTimeSeconds > playDurationFinder.get()) {
-                dummyScrollPane.element.setScroll(timeToScrollAmountConvertor.convertForwards(elapsedTimeSeconds));
-                syncer.unregisterPane(dummyScrollPane);
+                dummyScrollPane.element.setScroll(timeToScrollAmountConvertor.convertForwards(playDuration));
             }
 
             if (this.#isPlaying && this.#currTimeout === currTimeout) {

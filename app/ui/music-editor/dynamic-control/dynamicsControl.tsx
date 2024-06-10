@@ -1,9 +1,9 @@
-import React, {RefObject, useContext, useEffect, useRef} from "react";
+import React, {MutableRefObject, RefObject, useContext, useEffect, useRef, useState} from "react";
 
 import './dynamics.css';
 
 import {ScoreEditorContext} from "@/app/ui/music-editor/musicEditor";
-import {ScoreEditor} from "@/app/logic/scoreEditor";
+import {ScoreEditor} from "@/app/logic/editor/scoreEditor";
 import {createArray, useManualRerender} from "@/app/lib/util";
 import {RenderWhenVisible} from "@/app/ui/renderWhenVisible";
 import {ScrollPane, ScrollSyncContext} from "@/app/lib/scrollSync";
@@ -16,11 +16,13 @@ const dynamics_characters = {
     n: '\ue526',
 };
 
-function getDynamicsText(value : DynamicsValue) {
+type DynamicsOption = DynamicsValue | DynamicsCommand;
+
+function getDynamicsText(value: DynamicsValue) {
     return [...value].map(i => dynamics_characters[i as 'p' | 'm' | 'f' | 'n']).join('');
 }
 
-function CrescendoMarking({size}: {size: number}) {
+function CrescendoMarking({size}: { size: number }) {
     let w = size * 14;
     const h = 14;
     return <svg width={`${w}`} height={`${h}`} viewBox={`0 0 ${w} ${h}`}>
@@ -28,15 +30,19 @@ function CrescendoMarking({size}: {size: number}) {
     </svg>
 }
 
-function DecrescendoMarking({size}: {size: number}) {
+function DecrescendoMarking({size}: { size: number }) {
     let w = size * 14;
     const h = 14;
     return <svg width={`${w}`} height={`${h}`} viewBox={`0 0 ${w} ${h}`}>
-        <path d={`M ${w - 3} 1 L 3 ${h / 2} ${w - 3} ${h - 1}`} fill="none" stroke="currentcolor" strokeLinejoin="bevel"/>
+        <path d={`M ${w - 3} 1 L 3 ${h / 2} ${w - 3} ${h - 1}`} fill="none" stroke="currentcolor"
+              strokeLinejoin="bevel"/>
     </svg>
 }
 
-function DynamicsColumn({columnIndex}: { columnIndex: number }) {
+function DynamicsColumn({columnIndex, currDynamicOptionRef}: {
+    columnIndex: number,
+    currDynamicOptionRef: React.MutableRefObject<DynamicsOption | null>
+}) {
     const editor = useContext(ScoreEditorContext) as ScoreEditor;
 
     const rerender = useManualRerender();
@@ -44,38 +50,140 @@ function DynamicsColumn({columnIndex}: { columnIndex: number }) {
     const columnRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if(columnRef.current) {
-            columnRef.current.onclick = _ => {
-                if(editor.activeVoiceData.getDynamicValue(columnIndex - 1) !== DynamicsValue.None || editor.activeVoiceData.getDynamicValue(columnIndex + 1) !== DynamicsValue.None) {
-                    return;
-                }
+        if (!columnRef.current) return;
 
+        const el = columnRef.current;
+
+        el.oncontextmenu = e => e.preventDefault();
+
+        el.onmousedown = e => {
+            if (!currDynamicOptionRef.current) return;
+
+            if(e.button === 0) {
+                switch (currDynamicOptionRef.current) {
+                    case DynamicsValue.ff:
+                    case DynamicsValue.f:
+                    case DynamicsValue.mf:
+                    case DynamicsValue.mp:
+                    case DynamicsValue.p:
+                    case DynamicsValue.pp:
+                    case DynamicsValue.n:
+                        if (editor.activeVoiceData.getDynamicValue(columnIndex - 1) || editor.activeVoiceData.getDynamicValue(columnIndex + 1)) {
+                            return;
+                        }
+                        editor.activeVoiceData.setDynamicValue(columnIndex, currDynamicOptionRef.current);
+                        rerender();
+                        break;
+                    case DynamicsCommand.Crescendo:
+                    case DynamicsCommand.Decrescendo:
+                        el.onmouseenter?.({buttons: 1} as MouseEvent);
+                }
+            }
+            else if(e.button === 2) {
+                switch (currDynamicOptionRef.current) {
+                    case DynamicsValue.ff:
+                    case DynamicsValue.f:
+                    case DynamicsValue.mf:
+                    case DynamicsValue.mp:
+                    case DynamicsValue.p:
+                    case DynamicsValue.pp:
+                    case DynamicsValue.n:
+                        editor.activeVoiceData.setDynamicValue(columnIndex, DynamicsValue.None);
+                        rerender();
+                        break;
+                    case DynamicsCommand.Crescendo:
+                    case DynamicsCommand.Decrescendo:
+                        el.onmouseenter?.({buttons: 2} as MouseEvent);
+                }
+            }
+
+        }
+
+        el.onmouseenter = e => {
+            if(e.buttons & 2) {
+                editor.activeVoiceData.setDynamicCommand(columnIndex, DynamicsCommand.None);
+                rerender();
+            }
+            else if((e.buttons & 1) && ([DynamicsCommand.Crescendo, DynamicsCommand.Decrescendo] as any[]).includes(currDynamicOptionRef.current)) {
+                editor.activeVoiceData.setDynamicCommand(columnIndex, currDynamicOptionRef.current as DynamicsCommand);
+                rerender();
             }
         }
     });
 
-
     return <div className="dynamics-column" ref={columnRef}>
         {
-            (<span className={`dynamics-marking dynamics-value voice-${
-                (columnIndex * 1133) % 209 % 6 + 1
-            }`}>{dynamics_characters.m}{dynamics_characters.f}</span>)
+            editor.scoreData.noteData.map((voiceData, i) => {
+                const val = voiceData.getDynamicValue(columnIndex);
+                return val ? (
+                    <span className={`dynamics-marking dynamics-value voice-${i + 1} dynamic-${val}`} key={i}>
+                        {getDynamicsText(val)}
+                    </span>
+                ) : null;
+            })
         }
         {
-            (<span className={`dynamics-marking dynamics-crescendo voice-${
-                (columnIndex * 2123) % 229 % 6 + 1
-            }`}>
-                <DecrescendoMarking size={5}/>
-            </span>)
+            editor.scoreData.noteData.map((voiceData, i) => {
+                const val = voiceData.getDynamicCommand(columnIndex);
+                if (!val || voiceData.getDynamicCommand(columnIndex - 1) === val) {
+                    return null;
+                } else {
+                    // Figure out length of dynamics
+                    let length = 0;
+                    while (voiceData.getDynamicCommand(columnIndex + length) === val) length++;
+                    return <span className={`dynamics-marking dynamics-crescendo voice-${i + 1}`} key={i}>
+                        {
+                            val === DynamicsCommand.Crescendo ? <CrescendoMarking size={length}/> : <DecrescendoMarking size={length}/>
+                        }
+                    </span>
+                }
+            })
         }
     </div>;
+}
+
+export function DynamicOptionSelector({currDynamicOptionRef}: {
+    currDynamicOptionRef: MutableRefObject<DynamicsOption | null>
+}) {
+    const [currDynamicOption, setCurrDynamicOption] = useState<DynamicsOption | null>(null);
+
+    function onClickOption(value: DynamicsOption) {
+        if (currDynamicOptionRef.current === value) {
+            setCurrDynamicOption(currDynamicOptionRef.current = null);
+        } else {
+            setCurrDynamicOption(currDynamicOptionRef.current = value);
+        }
+    }
+
+    return <div id="dynamic-options">
+        {
+            [
+                DynamicsValue.pp, DynamicsValue.p, DynamicsValue.mp,
+                DynamicsValue.mf, DynamicsValue.f, DynamicsValue.ff,
+                DynamicsValue.n,
+            ].map((value) => {
+                return <span className="dynamic-option" key={value}
+                             data-active={value === currDynamicOption ? '' : null}
+                             onClick={() => onClickOption(value)}>{getDynamicsText(value)}</span>;
+            })
+        }
+        {
+            [
+                DynamicsCommand.Crescendo, DynamicsCommand.Decrescendo,
+            ].map((value) => {
+                return <span className="dynamic-option" key={value}
+                             data-active={value === currDynamicOption ? '' : null}
+                             onClick={() => onClickOption(value)}>{value}</span>;
+            })
+        }
+    </div>
 }
 
 export function DynamicsControl() {
     const editor = useContext(ScoreEditorContext) as ScoreEditor;
     const scrollSyncer = useContext(ScrollSyncContext);
     const containerRef = useRef<HTMLDivElement>(null);
-    const currDynamicRef = useRef<DynamicsValue | DynamicsCommand | null>(null);
+    const currDynamicOptionRef = useRef<DynamicsOption | null>(null);
 
     useEffect(() => {
         if (containerRef.current === null) return;
@@ -91,17 +199,7 @@ export function DynamicsControl() {
     return <>
         <div id="dynamic-control" ref={containerRef}>
             <div id="dynamic-control-left">
-                <div id="dynamic-options">
-                    {
-                        [
-                            DynamicsValue.n, DynamicsValue.pp, DynamicsValue.p,
-                            DynamicsValue.mp, DynamicsValue.mf, DynamicsValue.f,
-                            DynamicsValue.ff
-                        ].map(i => {
-                            return <span className="dynamic-option"></span>;
-                        })
-                    }
-                </div>
+                <DynamicOptionSelector currDynamicOptionRef={currDynamicOptionRef}/>
             </div>
             <div id="dynamic-control-content">
                 {
@@ -109,7 +207,8 @@ export function DynamicsControl() {
                         <RenderWhenVisible key={i} placeholderSupplier={(ref: RefObject<HTMLDivElement>) => (
                             <div ref={ref} className="dynamic-column-placeholder"></div>
                         )}>
-                            <DynamicsColumn columnIndex={i}></DynamicsColumn>
+                            <DynamicsColumn columnIndex={i}
+                                            currDynamicOptionRef={currDynamicOptionRef}></DynamicsColumn>
                         </RenderWhenVisible>
                     )
                 }

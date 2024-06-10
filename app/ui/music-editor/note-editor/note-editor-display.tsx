@@ -1,44 +1,23 @@
 import './note-editor.css'
 
-import {ScoreEditor} from "@/app/logic/scoreEditor";
 import React, {memo, RefObject, useContext, useEffect, useRef, useState} from "react";
 import {arraysEqual, createArray, useListenerOnWindow} from "@/app/lib/util";
 import {NoteCommand} from "@/app/logic/voiceData";
-import {ScoreEditorContext} from "@/app/ui/music-editor/musicEditor";
+import {NoteEditorContext} from "@/app/ui/music-editor/musicEditor";
 import {RenderWhenVisible} from "@/app/ui/renderWhenVisible";
 import {ScrollPane, ScrollSyncContext} from "@/app/lib/scrollSync";
+import {NoteEditor, NoteEditorInteractionType} from "@/app/logic/editor/noteEditor";
 
-export function NoteEditor() {
+export function NoteEditorDisplay() {
     const scrollSyncer = useContext(ScrollSyncContext);
 
-    const editor = useContext(ScoreEditorContext) as ScoreEditor;
-
-    const scoreData = editor.scoreData;
-
+    const editor = useContext(NoteEditorContext) as NoteEditor;
     const containerRef = useRef<HTMLDivElement>(null);
 
     function onInteractionEnd() {
         editor.endInteraction();
     }
 
-    function onKeyDown(e: KeyboardEvent) {
-        if (e.key === ' ') {
-            if (editor.isPlaying) {
-                editor.stopPlayScore();
-            } else if (containerRef.current !== null) {
-                editor.playScore(scrollSyncer);
-            }
-
-            e.preventDefault();
-            e.stopPropagation();
-        }
-        if (e.key === 'R' && e.ctrlKey) {
-            editor.clearScore();
-            e.preventDefault();
-        }
-    }
-
-    useListenerOnWindow(window, 'keydown', onKeyDown);
     useListenerOnWindow(window, 'mouseup', onInteractionEnd);
     useListenerOnWindow(window, 'blur', onInteractionEnd);
     useListenerOnWindow(window, 'mouseleave', onInteractionEnd);
@@ -59,7 +38,7 @@ export function NoteEditor() {
         <div id="piano-note-names"> {new Array(88).fill(null).map((_, i) => <span
             key={`note-name-${i}`}></span>)} </div>
         <div id="piano-notes">
-            {createArray(scoreData.length, i =>
+            {createArray(editor.scoreData.length, i =>
                 <RenderWhenVisible key={i} placeholderSupplier={
                     (ref : RefObject<HTMLDivElement>) => <div className={"piano-notes-column piano-notes-column-placeholder"} ref={ref}></div>
                 }>
@@ -89,8 +68,8 @@ function NoteEditorKey({columnIndex, noteIndex}: {
     columnIndex: number,
     noteIndex: number
 }) {
-    const editor = useContext(ScoreEditorContext) as ScoreEditor;
-
+    const editor = useContext(NoteEditorContext) as NoteEditor;
+    
     const [dummyState, setDummyState] = useState(0);
 
     editor.setUIUpdateCallback(columnIndex, noteIndex, () => setDummyState(dummyState + 1));
@@ -101,7 +80,12 @@ function NoteEditorKey({columnIndex, noteIndex}: {
 
     return (
         <span className="piano-notes-key" onMouseDown={e => {
-            editor.startInteraction(columnIndex, noteIndex, e.button === 0 ? e.ctrlKey ? 'blend' : 'write' : 'erase');
+            editor.startInteraction(columnIndex, noteIndex, (
+                e.button === 0 ?
+                e.ctrlKey ? NoteEditorInteractionType.Blend :
+                            NoteEditorInteractionType.Write :
+                            NoteEditorInteractionType.Erase
+            ));
             setDummyState(dummyState + 1);
         }}>
             <NoteEditorKeyDisplay commands={commands}></NoteEditorKeyDisplay>
@@ -110,8 +94,8 @@ function NoteEditorKey({columnIndex, noteIndex}: {
 }
 
 function NoteEditorColumn({columnIndex}: { columnIndex: number }) {
-    const editor = useContext(ScoreEditorContext) as ScoreEditor;
-
+    const editor = useContext(NoteEditorContext) as NoteEditor;
+    
     const [dummyState, setDummyState] = useState(0);
 
     return (

@@ -1,6 +1,6 @@
-import {ScoreEditor} from "@/app/logic/scoreEditor";
+import {ScoreEditor} from "@/app/logic/editor/scoreEditor";
 import React, {useContext, useEffect, useState} from "react";
-import {createArray, useManualRerender} from "@/app/lib/util";
+import {createArray, useListenerOnWindow, useManualRerender} from "@/app/lib/util";
 import {ScoreData} from "@/app/logic/scoreData";
 
 import './controls.css';
@@ -43,13 +43,7 @@ export function Controls() {
         }
     }
 
-    useEffect(() => {
-        /** @param {KeyboardEvent} e */
-        window.addEventListener('keydown', onKeyDown);
-        return () => {
-            window.removeEventListener('keydown', onKeyDown);
-        }
-    });
+    useListenerOnWindow(window, 'keydown', onKeyDown);
 
     return (
         // We don't actually care about the denominator of the time signature

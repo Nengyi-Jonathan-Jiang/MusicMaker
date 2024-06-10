@@ -12,7 +12,7 @@ export class VoiceData {
     constructor(length: number) {
         this.#instrument = new Instrument();
         this.#noteCommands = createArray(length, () => createArray(ScoreData.NUM_NOTES, NoteCommand.Empty));
-        this.#dynamicsCommands = createArray(length, DynamicsCommand.Empty);
+        this.#dynamicsCommands = createArray(length, DynamicsCommand.None);
         this.#dynamicsValues = createArray(length, DynamicsValue.None);
     }
 
@@ -63,9 +63,9 @@ export enum NoteCommand {
 }
 
 export enum DynamicsCommand {
-    Empty,
-    Crescendo,
-    Decrescendo,
+    None = "",
+    Crescendo = "<",
+    Decrescendo = ">",
 }
 
 export enum DynamicsValue {
