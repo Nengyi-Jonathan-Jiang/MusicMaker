@@ -7,7 +7,7 @@ import {ScoreEditor} from "@/app/logic/scoreEditor";
 import {createArray, useManualRerender} from "@/app/lib/util";
 import {RenderWhenVisible} from "@/app/ui/renderWhenVisible";
 import {ScrollPane, ScrollSyncContext} from "@/app/lib/scrollSync";
-import {DynamicsValue} from "@/app/logic/voiceData";
+import {DynamicsCommand, DynamicsValue} from "@/app/logic/voiceData";
 
 const dynamics_characters = {
     p: '\ue520',
@@ -15,6 +15,10 @@ const dynamics_characters = {
     f: '\ue522',
     n: '\ue526',
 };
+
+function getDynamicsText(value : DynamicsValue) {
+    return [...value].map(i => dynamics_characters[i as 'p' | 'm' | 'f' | 'n']).join('');
+}
 
 function CrescendoMarking({size}: {size: number}) {
     let w = size * 14;
@@ -38,7 +42,7 @@ function DynamicsColumn({columnIndex}: { columnIndex: number }) {
     const rerender = useManualRerender();
 
     const columnRef = useRef<HTMLDivElement>(null);
-    
+
     useEffect(() => {
         if(columnRef.current) {
             columnRef.current.onclick = _ => {
@@ -71,6 +75,7 @@ export function DynamicsControl() {
     const editor = useContext(ScoreEditorContext) as ScoreEditor;
     const scrollSyncer = useContext(ScrollSyncContext);
     const containerRef = useRef<HTMLDivElement>(null);
+    const currDynamicRef = useRef<DynamicsValue | DynamicsCommand | null>(null);
 
     useEffect(() => {
         if (containerRef.current === null) return;
@@ -86,6 +91,17 @@ export function DynamicsControl() {
     return <>
         <div id="dynamic-control" ref={containerRef}>
             <div id="dynamic-control-left">
+                <div id="dynamic-options">
+                    {
+                        [
+                            DynamicsValue.n, DynamicsValue.pp, DynamicsValue.p,
+                            DynamicsValue.mp, DynamicsValue.mf, DynamicsValue.f,
+                            DynamicsValue.ff
+                        ].map(i => {
+                            return <span className="dynamic-option"></span>;
+                        })
+                    }
+                </div>
             </div>
             <div id="dynamic-control-content">
                 {
