@@ -2,13 +2,8 @@ import {ScoreData} from "@/app/logic/scoreData";
 import {ScorePlayer} from "@/app/logic/scorePlayer";
 import {Instrument} from "@/app/logic/instrument";
 import {IScrollSyncer} from "@/app/lib/scrollSync";
-import {NoteEditor, NoteEditorInteractionType} from "@/app/logic/editor/noteEditor";
-
-// TODO: split this up
-
-export class DynamicsEditor {
-
-}
+import {NoteEditor} from "@/app/logic/editor/noteEditor";
+import {DynamicsEditor} from "@/app/logic/editor/dynamicsEditor";
 
 export class ScoreEditor {
 
@@ -17,13 +12,15 @@ export class ScoreEditor {
     readonly #scoreData: ScoreData;
     readonly #scorePlayer: ScorePlayer;
     readonly #noteEditor: NoteEditor;
+    readonly #dynamicsEditor: DynamicsEditor;
 
     constructor(score_length : number) {
         this.#scoreData = new ScoreData(score_length);
         this.#scorePlayer = new ScorePlayer;
         this.#activeVoice = 0;
 
-        this.#noteEditor = new NoteEditor(this, this.scoreData);
+        this.#noteEditor = new NoteEditor(this);
+        this.#dynamicsEditor = new DynamicsEditor(this);
     }
 
     clearScore() {
@@ -48,6 +45,10 @@ export class ScoreEditor {
         return this.#noteEditor;
     }
 
+    get dynamicsEditor() {
+        return this.#dynamicsEditor;
+    }
+
     useSnappingInterval(snapInterval: number) {
         this.#noteEditor.useSnappingInterval(snapInterval);
     }
@@ -68,23 +69,11 @@ export class ScoreEditor {
         return this.#scorePlayer.getInstrument(this.activeVoice);
     }
 
-    set instrumentForActiveVoice(instrumentName : string) {
-        this.#scorePlayer.setInstrument(this.activeVoice, new Instrument(instrumentName));
+    set instrumentForActiveVoice(instrument : Instrument) {
+        this.#scorePlayer.setInstrument(this.activeVoice, instrument);
     }
 
     get activeVoiceData() {
-        return this.#scoreData.noteData[this.activeVoice];
-    }
-
-    endInteraction() {
-        this.#noteEditor.endInteraction();
-    }
-
-    mouseEnterColumn(columnIndex: number) {
-        this.#noteEditor.mouseEnterColumn(columnIndex);
-    }
-
-    setUIUpdateCallback(columnIndex: number, noteIndex: number, callback: () => void) {
-        this.#noteEditor.setUIUpdateCallback(columnIndex, noteIndex, callback);
+        return this.#scoreData.voiceData[this.activeVoice];
     }
 }

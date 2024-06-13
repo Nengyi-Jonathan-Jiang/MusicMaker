@@ -184,19 +184,22 @@ Tuba :
     audio/tuba/Tuba-F#1.wav
 `;
 
-function getNoteName(path : string) : string | number {
-    const noteNameMatch = path.match(/[A-Ga-g][s#]?\d|\d\d\d/) as RegExpMatchArray;
-    const str = noteNameMatch[0].toUpperCase().replaceAll(/[sS]/g, '#');
-    return isNaN(+str) ? str : +str;
+function getNoteName(path: string): string | number {
+    // Try finding scientific note notation
+    let match : RegExpMatchArray | null = null;
+    if((match = path.match(/[A-Ga-g][s#]?\d/)) !== null){
+        return match[0].toUpperCase().replaceAll(/[sS]/g, '#');
+    }
+    else if((match = path.match(/\d\d\d/)) !== null){
+        return +match[0];
+    }
+    else {
+        throw new Error(`Path '${path}' does not contain a note name`);
+    }
 }
 
-/**
- * Copied from the internal type definitions of Tone.js. I'm not sure why this is not exposed.
- *
- * Used in {@link SamplerOptions}, which is in turn used in {@link Sampler.constructor}
- */
 type SamplesMap = {
-    [p : string] : ToneAudioBuffer | AudioBuffer | string
+    [p: string]: ToneAudioBuffer | AudioBuffer | string
 };
 
 export const instrumentData: Map<string, AsyncTask<Partial<SamplerOptions>>> = new Map(
@@ -207,13 +210,13 @@ export const instrumentData: Map<string, AsyncTask<Partial<SamplerOptions>>> = n
             paths: instrumentSourcesStr.split(/\s*\n\s*/g)
         }))
         .map(({instrumentName, paths}) => [
-        instrumentName,
-        new AsyncTask(async () => ({
-            urls: (await Promise.all(
-                paths.map(async path => Object.fromEntries(
-                    [[getNoteName(path), await new ToneAudioBuffer().load(path)]]
-                ))
-            )).reduce((a: SamplesMap, b) : SamplesMap => ({...a, ...b}), {})
-        }), true)
-    ])
+            instrumentName,
+            new AsyncTask(async () => ({
+                urls: (await Promise.all(
+                    paths.map(async path => Object.fromEntries(
+                        [[getNoteName(path), await new ToneAudioBuffer().load(path)]]
+                    ))
+                )).reduce((a: SamplesMap, b): SamplesMap => ({...a, ...b}), {})
+            }), true)
+        ])
 );

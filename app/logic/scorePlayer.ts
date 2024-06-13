@@ -6,6 +6,7 @@ import {ScoreData} from "@/app/logic/scoreData";
 import {LinearValueConvertor, ValueConvertor} from "@/app/lib/valueConvertor";
 import {MaximumNumberFinder} from "@/app/lib/minMax";
 import {IScrollSyncer, ScrollableElement, ScrollPane} from "@/app/lib/scrollSync";
+import {NUM_NOTES, NUM_VOICES} from "@/app/logic/Constants";
 
 const columnsToScrollAmountConvertor = new LinearValueConvertor(14, 19);
 
@@ -44,7 +45,7 @@ export class ScorePlayer {
     #currTimeout;
 
     constructor() {
-        this.instruments = createArray(Constants.NUM_VOICES, () => new Instrument())
+        this.instruments = createArray(Constants.NUM_VOICES, () => new Instrument)
 
         this.#isPlaying = false;
 
@@ -97,14 +98,14 @@ export class ScorePlayer {
 
         const playDurationFinder = new MaximumNumberFinder(0);
 
-        for (let voice = 0; voice < ScoreData.NUM_VOICES; voice++) {
+        for (let voice = 0; voice < NUM_VOICES; voice++) {
             const instrument = this.instruments[voice];
 
             const initialNotes = new Set<number>;
 
             for (let column = 0; column < score.length; column++) {
-                for (let noteIndex = 0; noteIndex < ScoreData.NUM_NOTES; noteIndex++) {
-                    const command = score.noteData[voice].getNoteCommand(column, noteIndex);
+                for (let noteIndex = 0; noteIndex < NUM_NOTES; noteIndex++) {
+                    const command = score.voiceData[voice].getNoteCommand(column, noteIndex);
 
                     if (column < currentColumn) {
                         if (command.doBegin) {

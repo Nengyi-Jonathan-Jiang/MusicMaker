@@ -237,18 +237,15 @@
 }
 
 .piano-notes-key > span.begin {
-    border-radius: 1em 0 0 1em;
     width:         calc(100% - 1px);
     margin-left:   2px;
 }
 
 .piano-notes-key > span.end {
-    border-radius: 0 1em 1em 0;
     width:         calc(100% - 1px);
 }
 
 .piano-notes-key > span.dot {
-    border-radius: 1em 1em 1em 1em;
     margin-left:   2px;
     width:         calc(100% - 4px);
 }

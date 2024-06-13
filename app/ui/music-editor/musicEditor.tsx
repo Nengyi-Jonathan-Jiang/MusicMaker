@@ -1,6 +1,6 @@
 "use client"
 
-import React, {useState} from "react";
+import {createContext, useState} from "react";
 import {ScoreEditor} from "@/app/logic/editor/scoreEditor";
 import {Controls} from "@/app/ui/music-editor/general-controls/controls";
 import {NoteEditorDisplay} from "@/app/ui/music-editor/note-editor/note-editor-display";
@@ -8,14 +8,21 @@ import {DynamicsControl} from "@/app/ui/music-editor/dynamic-control/dynamicsCon
 import {ScrollSyncContext, AbsoluteScrollSyncer} from "@/app/lib/scrollSync";
 import {NoteEditor} from "@/app/logic/editor/noteEditor";
 import {useListenerOnWindow} from "@/app/lib/util";
+import {DynamicsEditor} from "@/app/logic/editor/dynamicsEditor";
 
-export const ScoreEditorContext = React.createContext<ScoreEditor | null>(null);
-export const NoteEditorContext = React.createContext<NoteEditor | null>(null);
+export const ScoreEditorContext = createContext<ScoreEditor | null>(null);
+export const NoteEditorContext = createContext<NoteEditor | null>(null);
+export const DynamicsEditorContext = createContext<DynamicsEditor | null>(null);
 
 export function MusicEditor() {
-    const [scoreEditor] = useState(() => new ScoreEditor(6 * 4 * 64));
-    const noteEditor = scoreEditor.noteEditor;
     const [scrollSyncer] = useState(() => new AbsoluteScrollSyncer({syncY: false}));
+
+    // const [scoreEditor] = useState(() => new ScoreEditor(6 * 4 * 64));
+    const [scoreEditor] = useState(() => new ScoreEditor(6 * 4 * 2));
+
+    const noteEditor = scoreEditor.noteEditor;
+    const dynamicsEditor = scoreEditor.dynamicsEditor;
+
 
     useListenerOnWindow(window, 'keydown', e => {
         if (e.key === ' ') {
@@ -44,7 +51,9 @@ export function MusicEditor() {
                     <NoteEditorDisplay/>
                 </NoteEditorContext.Provider>
 
-                <DynamicsControl/>
+                <DynamicsEditorContext.Provider value={dynamicsEditor}>
+                    <DynamicsControl/>
+                </DynamicsEditorContext.Provider>
             </ScrollSyncContext.Provider>
         </ScoreEditorContext.Provider>
     </div>);

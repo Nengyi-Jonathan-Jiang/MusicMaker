@@ -9,6 +9,13 @@ export enum NoteEditorInteractionType {
     Blend = "blend", Write = "write", Erase = "erase"
 }
 
+enum NoteEditorBoundaryType {
+    Start,
+    End,
+    BlendStart,
+    BlendEnd
+}
+
 class NoteEditorInteraction {
     public readonly type: NoteEditorInteractionType;
     public readonly  note: number;
@@ -34,11 +41,11 @@ export class NoteEditor {
 
     private readonly editor: ScoreEditor;
 
-    public constructor(editor: ScoreEditor, scoreData: ScoreData) {
+    public constructor(editor: ScoreEditor) {
         this.editor = editor;
         this.snapInterval = 1;
 
-        this.uiUpdateCallbacks = createArray(scoreData.length, () => createArray(NUM_NOTES, null));
+        this.uiUpdateCallbacks = createArray(editor.scoreData.length, () => createArray(NUM_NOTES, null));
         this.pendingUIUpdates = [];
 
         this.currentInteraction = null;
@@ -107,27 +114,27 @@ export class NoteEditor {
         ]
     }
 
-    private noteDataForVoice(voiceIndex: number) {
-        return this.scoreData.noteData[voiceIndex];
+    private getVoiceData(voiceIndex: number) {
+        return this.scoreData.voiceData[voiceIndex];
     }
 
-    private setCommandForVoice(voiceIndex: number, columnIndex: number, noteIndex: number, command: number) {
-        if (columnIndex < 0 || columnIndex >= this.scoreData.length || noteIndex < 0 || noteIndex >= ScoreData.NUM_NOTES) {
+    private setCommandForVoice(voiceIndex: number, columnIndex: number, noteIndex: number, command: NoteCommand) {
+        if (columnIndex < 0 || columnIndex >= this.scoreData.length || noteIndex < 0 || noteIndex >= NUM_NOTES) {
             return;
         }
 
-        const oldCommand = this.noteDataForVoice(voiceIndex).getNoteCommand(columnIndex, noteIndex).command;
-        this.noteDataForVoice(voiceIndex).setNoteCommand(columnIndex, noteIndex, command);
+        const oldCommand = this.getVoiceData(voiceIndex).getNoteCommand(columnIndex, noteIndex).command;
         if (command !== oldCommand) {
+            this.getVoiceData(voiceIndex).setNoteCommand(columnIndex, noteIndex, command);
             this.pendingUIUpdates.push({columnIndex, noteIndex});
         }
     }
 
     private getCommandForVoice(voiceIndex: number, columnIndex: number, noteIndex: number) {
-        if (columnIndex < 0 || columnIndex >= this.scoreData.length || noteIndex < 0 || noteIndex >= ScoreData.NUM_NOTES) {
+        if (columnIndex < 0 || columnIndex >= this.scoreData.length || noteIndex < 0 || noteIndex >= NUM_NOTES) {
             return NoteCommand.Empty;
         }
-        return this.noteDataForVoice(voiceIndex).getNoteCommand(columnIndex, noteIndex).command;
+        return this.getVoiceData(voiceIndex).getNoteCommand(columnIndex, noteIndex).command;
     }
 
     private applyUIUpdates() {
@@ -139,13 +146,13 @@ export class NoteEditor {
         }
     }
 
-    private applyBoundary(voiceIndex: number, col: number, note: number, type: 'start' | 'end' | 'hold-start' | 'hold-end') {
+    private applyBoundary(voiceIndex: number, col: number, note: number, type: NoteEditorBoundaryType) {
         const currCommand = this.getCommandForVoice(voiceIndex, col, note);
         let newCommand = currCommand;
 
         // noinspection FallThroughInSwitchStatementJS
         switch (type) {
-            case "hold-start":
+            case NoteEditorBoundaryType.BlendStart:
                 if (this.getCommandForVoice(voiceIndex, col - 1, note) !== 0) {
                     switch (currCommand) {
                         case NoteCommand.BeginNote:
@@ -157,7 +164,7 @@ export class NoteEditor {
                     }
                     break;
                 }
-            case "start":
+            case NoteEditorBoundaryType.Start:
                 switch (currCommand) {
                     case NoteCommand.EndNote:
                         newCommand = NoteCommand.ShortNote;
@@ -167,7 +174,7 @@ export class NoteEditor {
                         break;
                 }
                 break;
-            case "hold-end":
+            case NoteEditorBoundaryType.BlendEnd:
                 if (this.getCommandForVoice(voiceIndex, col + 1, note) !== 0) {
                     switch (currCommand) {
                         case NoteCommand.EndNote:
@@ -179,7 +186,7 @@ export class NoteEditor {
                     }
                     break;
                 }
-            case "end":
+            case NoteEditorBoundaryType.End:
                 switch (currCommand) {
                     case NoteCommand.BeginNote:
                         newCommand = NoteCommand.ShortNote;
@@ -221,27 +228,27 @@ export class NoteEditor {
             case 'blend':
                 this.writeRange(voice, newStartCol, newEndCol, note);
 
-                this.applyBoundary(voice, newStartCol, note, 'start');
-                this.applyBoundary(voice, newEndCol, note, 'end');
-                this.applyBoundary(voice, newStartCol, note, 'hold-start');
-                this.applyBoundary(voice, newEndCol, note, 'hold-end');
-                this.applyBoundary(voice, newStartCol - 1, note, 'hold-end');
-                this.applyBoundary(voice, newEndCol + 1, note, 'hold-start');
+                this.applyBoundary(voice, newStartCol, note, NoteEditorBoundaryType.Start);
+                this.applyBoundary(voice, newEndCol, note, NoteEditorBoundaryType.End);
+                this.applyBoundary(voice, newStartCol, note, NoteEditorBoundaryType.BlendStart);
+                this.applyBoundary(voice, newEndCol, note, NoteEditorBoundaryType.BlendEnd);
+                this.applyBoundary(voice, newStartCol - 1, note, NoteEditorBoundaryType.BlendEnd);
+                this.applyBoundary(voice, newEndCol + 1, note, NoteEditorBoundaryType.BlendStart);
                 break;
             case 'erase':
                 this.eraseRange(voice, newStartCol, newEndCol, note);
 
-                this.applyBoundary(voice, newStartCol - 1, note, 'hold-end');
-                this.applyBoundary(voice, newEndCol + 1, note, 'hold-start');
+                this.applyBoundary(voice, newStartCol - 1, note, NoteEditorBoundaryType.BlendEnd);
+                this.applyBoundary(voice, newEndCol + 1, note, NoteEditorBoundaryType.BlendStart);
                 break;
             case 'write': {
                 this.eraseRange(voice, oldStartCol, oldEndCol, note);
 
                 this.writeRange(voice, newStartCol, newEndCol, note);
-                this.applyBoundary(voice, newStartCol, note, 'start');
-                this.applyBoundary(voice, newEndCol, note, 'end');
-                this.applyBoundary(voice, newStartCol - 1, note, 'end');
-                this.applyBoundary(voice, newEndCol + 1, note, 'start');
+                this.applyBoundary(voice, newStartCol, note, NoteEditorBoundaryType.Start);
+                this.applyBoundary(voice, newEndCol, note, NoteEditorBoundaryType.End);
+                this.applyBoundary(voice, newStartCol - 1, note, NoteEditorBoundaryType.End);
+                this.applyBoundary(voice, newEndCol + 1, note, NoteEditorBoundaryType.Start);
             }
         }
     }

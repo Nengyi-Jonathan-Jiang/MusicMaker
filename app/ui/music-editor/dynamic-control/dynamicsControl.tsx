@@ -96,7 +96,6 @@ function DynamicsColumn({columnIndex, currDynamicOptionRef}: {
                         el.onmouseenter?.({buttons: 2} as MouseEvent);
                 }
             }
-
         }
 
         el.onmouseenter = e => {
@@ -113,7 +112,7 @@ function DynamicsColumn({columnIndex, currDynamicOptionRef}: {
 
     return <div className="dynamics-column" ref={columnRef}>
         {
-            editor.scoreData.noteData.map((voiceData, i) => {
+            editor.scoreData.voiceData.map((voiceData, i) => {
                 const val = voiceData.getDynamicValue(columnIndex);
                 return val ? (
                     <span className={`dynamics-marking dynamics-value voice-${i + 1} dynamic-${val}`} key={i}>
@@ -123,7 +122,7 @@ function DynamicsColumn({columnIndex, currDynamicOptionRef}: {
             })
         }
         {
-            editor.scoreData.noteData.map((voiceData, i) => {
+            editor.scoreData.voiceData.map((voiceData, i) => {
                 const val = voiceData.getDynamicCommand(columnIndex);
                 if (!val || voiceData.getDynamicCommand(columnIndex - 1) === val) {
                     return null;

@@ -6,6 +6,7 @@ import {ScoreData} from "@/app/logic/scoreData";
 import './controls.css';
 import {ScoreEditorContext} from "@/app/ui/music-editor/musicEditor";
 import {InstrumentSelector} from "@/app/ui/music-editor/general-controls/instrumentSelector";
+import {NUM_VOICES} from "@/app/logic/Constants";
 
 export function Controls() {
     const editor = useContext(ScoreEditorContext) as ScoreEditor;
@@ -52,7 +53,7 @@ export function Controls() {
                 <span>Voice:</span>
                  <span className="multi-select" id="voice-selector">
                     {
-                        createArray(ScoreData.NUM_VOICES, i => (
+                        createArray(NUM_VOICES, i => (
                             <span key={`voice-select-${i + 1}`} onClick={() => {
                                 setActiveVoice(editor.activeVoice = i);
                             }} data-active={i === activeVoice ? "" : null}>{i + 1}</span>

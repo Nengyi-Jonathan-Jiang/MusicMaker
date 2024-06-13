@@ -8,6 +8,10 @@ import {RenderWhenVisible} from "@/app/ui/renderWhenVisible";
 import {ScrollPane, ScrollSyncContext} from "@/app/lib/scrollSync";
 import {NoteEditor, NoteEditorInteractionType} from "@/app/logic/editor/noteEditor";
 
+function PlaceholderNoteEditorColumn({elementRef}: { elementRef: React.RefObject<HTMLDivElement> }) {
+    return <div className={"piano-notes-column piano-notes-column-placeholder"} ref={elementRef}></div>;
+}
+
 export function NoteEditorDisplay() {
     const scrollSyncer = useContext(ScrollSyncContext);
 
@@ -40,7 +44,7 @@ export function NoteEditorDisplay() {
         <div id="piano-notes">
             {createArray(editor.scoreData.length, i =>
                 <RenderWhenVisible key={i} placeholderSupplier={
-                    (ref : RefObject<HTMLDivElement>) => <div className={"piano-notes-column piano-notes-column-placeholder"} ref={ref}></div>
+                    (ref: RefObject<HTMLDivElement>) => <PlaceholderNoteEditorColumn elementRef={ref}/>
                 }>
                     <NoteEditorColumn columnIndex={i}/>
                 </RenderWhenVisible>
@@ -51,30 +55,28 @@ export function NoteEditorDisplay() {
 }
 
 const NoteEditorKeyDisplay = memo(function NoteEditorKeyDisplay({commands}: { commands: NoteCommand[] }) {
-    return <>{
-        commands.map((command, i) =>
-            [
-                null,
-                <span className={`voice-${i + 1} begin`} key={i}/>,
-                <span className={`voice-${i + 1} hold`} key={i}/>,
-                <span className={`voice-${i + 1} end`} key={i}/>,
-                <span className={`voice-${i + 1} dot`} key={i}/>,
-            ][command]
-        )
-    }</>
-}, (a: {commands: NoteCommand[]}, b: {commands: NoteCommand[]}) => arraysEqual(a.commands, b.commands));
+    return commands.map((command, i) =>
+        [
+            null,
+            <span className={`voice-${i + 1} begin`} key={i}/>,
+            <span className={`voice-${i + 1} hold`} key={i}/>,
+            <span className={`voice-${i + 1} end`} key={i}/>,
+            <span className={`voice-${i + 1} dot`} key={i}/>,
+        ][command]
+    );
+}, (a: { commands: NoteCommand[] }, b: { commands: NoteCommand[] }) => arraysEqual(a.commands, b.commands));
 
 function NoteEditorKey({columnIndex, noteIndex}: {
     columnIndex: number,
     noteIndex: number
 }) {
     const editor = useContext(NoteEditorContext) as NoteEditor;
-    
+
     const [dummyState, setDummyState] = useState(0);
 
     editor.setUIUpdateCallback(columnIndex, noteIndex, () => setDummyState(dummyState + 1));
 
-    const commands = editor.scoreData.noteData.map(data =>
+    const commands = editor.scoreData.voiceData.map(data =>
         data.getNoteCommand(columnIndex, noteIndex).command
     );
 
@@ -82,9 +84,9 @@ function NoteEditorKey({columnIndex, noteIndex}: {
         <span className="piano-notes-key" onMouseDown={e => {
             editor.startInteraction(columnIndex, noteIndex, (
                 e.button === 0 ?
-                e.ctrlKey ? NoteEditorInteractionType.Blend :
-                            NoteEditorInteractionType.Write :
-                            NoteEditorInteractionType.Erase
+                    e.ctrlKey ? NoteEditorInteractionType.Blend :
+                        NoteEditorInteractionType.Write :
+                    NoteEditorInteractionType.Erase
             ));
             setDummyState(dummyState + 1);
         }}>
@@ -95,7 +97,7 @@ function NoteEditorKey({columnIndex, noteIndex}: {
 
 function NoteEditorColumn({columnIndex}: { columnIndex: number }) {
     const editor = useContext(NoteEditorContext) as NoteEditor;
-    
+
     const [dummyState, setDummyState] = useState(0);
 
     return (

@@ -7,6 +7,7 @@ import {ScoreEditor} from "@/app/logic/editor/scoreEditor";
 
 import './controls.css'
 import {Select} from "@/app/lib/select";
+import {Instrument} from "@/app/logic/instrument";
 
 export function InstrumentSelector() {
     const editor = useContext(ScoreEditorContext) as ScoreEditor;
@@ -30,8 +31,8 @@ export function InstrumentSelector() {
     // })}
     return <>
         <span>Instrument:</span>
-        <Select id="instrument-select" onChange={(value) => {
-            editor.instrumentForActiveVoice = value;
+        <Select id="instrument-select" onChange={(instrumentName) => {
+            editor.instrumentForActiveVoice = new Instrument(instrumentName);
             rerender();
         }} value={activeInstrument.name} data-loaded={isActiveInstrumentLoaded ? "" : null}
                 options={[...instrumentData.keys()]}

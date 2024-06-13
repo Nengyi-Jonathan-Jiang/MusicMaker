@@ -1,17 +1,15 @@
 import {createArray} from "@/app/lib/util";
 import {ScoreData} from "@/app/logic/scoreData";
 import {Instrument} from "@/app/logic/instrument";
+import {NUM_NOTES} from "@/app/logic/Constants";
 
 export class VoiceData {
     readonly #noteCommands: NoteCommand[][];
     readonly #dynamicsCommands: DynamicsCommand[];
     readonly #dynamicsValues: DynamicsValue[];
 
-    #instrument: Instrument;
-
     constructor(length: number) {
-        this.#instrument = new Instrument();
-        this.#noteCommands = createArray(length, () => createArray(ScoreData.NUM_NOTES, NoteCommand.Empty));
+        this.#noteCommands = createArray(length, () => createArray(NUM_NOTES, NoteCommand.Empty));
         this.#dynamicsCommands = createArray(length, DynamicsCommand.None);
         this.#dynamicsValues = createArray(length, DynamicsValue.None);
     }
@@ -43,14 +41,6 @@ export class VoiceData {
 
     setDynamicValue(column: number, value: DynamicsValue) {
         this.#dynamicsValues[column] = value;
-    }
-
-    get instrument(): Instrument {
-        return this.#instrument;
-    }
-
-    set instrument(instrumentType: string) {
-        this.#instrument = new Instrument(instrumentType);
     }
 }
 
