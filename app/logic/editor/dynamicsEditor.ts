@@ -41,17 +41,17 @@ export class DynamicsEditor {
         const {None} = DynamicsCommand;
 
         // Recalculate hairpin start and end
-        this.hairpinStart = createArray(NUM_VOICES, () => createArray(this.editor.scoreData.length, -1));
-        this.hairpinEnd = createArray(NUM_VOICES, () => createArray(this.editor.scoreData.length, -1));
+        this.hairpinStart = createArray(NUM_VOICES, () => createArray(this.scoreData.length, -1));
+        this.hairpinEnd = createArray(NUM_VOICES, () => createArray(this.scoreData.length, -1));
         for(let voice = 0; voice < NUM_VOICES; voice++) {
             let currentHairpinStart = -1;
             let currentHairpinEnd = -1;
             let currentDynamicCommand = None;
-            for(let column = 0; column < this.editor.scoreData.length; column++) {
+            for(let column = 0; column < this.scoreData.length; column++) {
                 let command = this.getCommandForVoice(voice, column);
                 if (command === None) {
                     if(currentDynamicCommand !== None) {
-                        this.writeHairpinStartEnd(voice, currentHairpinStart, currentHairpinEnd, currentHairpinStart, currentHairpinEnd);
+                        this.writeHairpinStartEnd(voice, currentHairpinStart, currentHairpinEnd);
                     }
 
                     currentHairpinStart = currentHairpinEnd = -1;
@@ -60,7 +60,7 @@ export class DynamicsEditor {
                 }
                 if (command !== currentDynamicCommand) {
                     if(currentDynamicCommand !== None) {
-                        this.writeHairpinStartEnd(voice, currentHairpinStart, currentHairpinEnd, currentHairpinStart, currentHairpinEnd);
+                        this.writeHairpinStartEnd(voice, currentHairpinStart, currentHairpinEnd);
                     }
 
                     currentDynamicCommand = command;
@@ -71,7 +71,7 @@ export class DynamicsEditor {
                 currentHairpinEnd = column;
             }
             if(currentDynamicCommand !== None) {
-                this.writeHairpinStartEnd(voice, currentHairpinStart, currentHairpinEnd, currentHairpinStart, currentHairpinEnd);
+                this.writeHairpinStartEnd(voice, currentHairpinStart, currentHairpinEnd);
             }
 
             console.log(this.hairpinStart[voice], this.hairpinEnd[voice]);
@@ -100,14 +100,14 @@ export class DynamicsEditor {
         this.applyUIUpdates();
     }
 
-    startInteraction(columnIndex: number, command: DynamicsCommand) {
+    startInteraction(column: number, command: DynamicsCommand) {
         this.currentInteraction = new DynamicsEditorInteraction(
             this.editor.activeVoice,
-            columnIndex,
+            column,
             command
         );
 
-        this.mouseEnterColumn(columnIndex);
+        this.mouseEnterColumn(column);
 
         this.applyUIUpdates();
     }
@@ -117,15 +117,15 @@ export class DynamicsEditor {
         this.applyUIUpdates();
     }
 
-    mouseEnterColumn(columnIndex: number) {
+    mouseEnterColumn(column: number) {
         if (this.currentInteraction === null) return;
 
-        this.updateInteraction(columnIndex);
+        this.updateInteraction(column);
         this.applyUIUpdates();
     }
 
-    setUIUpdateCallback(columnIndex: number, callback: () => void) {
-        this.uiUpdateCallbacks[columnIndex] = callback;
+    setUIUpdateCallback(column: number, callback: () => void) {
+        this.uiUpdateCallbacks[column] = callback;
     }
 
     private sortRange(a: number, b : number) : [number, number] {
@@ -135,87 +135,110 @@ export class DynamicsEditor {
         ]
     }
 
-    private getVoiceData(voiceIndex: number) {
-        return this.scoreData.voiceData[voiceIndex];
+    private getVoiceData(voice: number) {
+        return this.scoreData.voiceData[voice];
     }
 
-    private setCommandForVoice(voiceIndex: number, columnIndex: number, command: DynamicsCommand) {
-        if (columnIndex < 0 || columnIndex >= this.scoreData.length) return;
+    private setCommandForVoice(voice: number, column: number, command: DynamicsCommand) {
+        if (column < 0 || column >= this.scoreData.length) return;
 
-        this.getVoiceData(voiceIndex).setDynamicCommand(columnIndex, command);
+        this.getVoiceData(voice).setDynamicCommand(column, command);
     }
 
-    private getCommandForVoice(voiceIndex: number, columnIndex: number) {
-        if (columnIndex < 0 || columnIndex >= this.scoreData.length) {
+    private getCommandForVoice(voice: number, column: number) {
+        if (column < 0 || column >= this.scoreData.length) {
             return DynamicsCommand.None;
         }
-        return this.getVoiceData(voiceIndex).getDynamicCommand(columnIndex);
+        return this.getVoiceData(voice).getDynamicCommand(column);
     }
 
     private applyUIUpdates() {
-        for (const columnIndex of this.pendingUIUpdates.splice(0, Number.POSITIVE_INFINITY)) {
-            const callback = this.uiUpdateCallbacks[columnIndex];
+        for (const column of this.pendingUIUpdates.splice(0, Number.POSITIVE_INFINITY)) {
+            const callback = this.uiUpdateCallbacks[column];
             if (callback !== null) {
                 callback();
             }
         }
     }
 
-    private writeRange(voiceIndex: number, startCol: number, endCol: number, command: DynamicsCommand) {
+    private writeRange(voice: number, startCol: number, endCol: number, command: DynamicsCommand) {
         for (let col = startCol; col <= endCol; col++) {
-            this.setCommandForVoice(voiceIndex, col, command);
+            this.setCommandForVoice(voice, col, command);
+        }
+    }
+    
+    private getHairpinStartEnd(voice: number, col: number) {
+        if(col < 0 || col >= this.scoreData.length) {
+            return {
+                start: -1,
+                end: -1,
+                isInRange: false
+            };
+        }
+        return {
+            start: this.hairpinStart[voice][col],
+            end: this.hairpinEnd[voice][col],
+            isInRange: true
+        }
+    }
+    
+    private writeHairpinStartEnd(voice: number, startCol: number, endCol: number, reset: boolean = false) {
+        for (let col = startCol; col <= endCol; col++) {
+            if(col < 0 || col >= this.scoreData.length) continue;
+            
+            this.hairpinStart[voice][col] = reset ? -1 : startCol;
+            this.hairpinEnd[voice][col] = reset ? -1 : endCol;
+        }
+    }
+    
+    private safeEraseRange(voice: number, startCol: number, endCol: number) {
+        for (let col = startCol; col <= endCol; col++) {
+            this.setCommandForVoice(voice, col, DynamicsCommand.None);
+        }
+        this.writeHairpinStartEnd(voice, startCol, endCol, true);
+        if(this.getCommandForVoice(voice, startCol - 1) !== DynamicsCommand.None) {
+            let start = this.getHairpinStartEnd(voice, startCol - 1).start;
+            this.writeHairpinStartEnd(voice, start, startCol - 1)
+        }
+        if(this.getCommandForVoice(voice, endCol + 1) !== DynamicsCommand.None) {
+            let end = this.getHairpinStartEnd(voice, startCol - 1).end;
+            this.writeHairpinStartEnd(voice, endCol + 1, end);
         }
     }
 
-    private writeHairpinStartEnd(voiceIndex: number, startCol: number, endCol: number, start: number, end: number) {
-        for (let col = startCol; col <= endCol; col++) {
-            if(col < 0 || col >= this.editor.scoreData.length) continue;
-
-            this.hairpinStart[voiceIndex][col] = start;
-            this.hairpinEnd[voiceIndex][col] = end;
-        }
-    }
-
-    private eraseRange(voiceIndex: number, startCol: number, endCol: number) {
-        for (let col = startCol; col <= endCol; col++) {
-            this.setCommandForVoice(voiceIndex, col, DynamicsCommand.None);
-        }
-    }
-
-    private updateInteraction(columnIndex: number) {
+    private updateInteraction(column: number) {
         if(this.currentInteraction === null) return;
 
         const voice = this.currentInteraction.voice;
         const command = this.currentInteraction.command;
         const [start, end] = this.sortRange(
             this.currentInteraction.lastUpdatedColumn,
-            columnIndex
+            column
         );
 
-        this.currentInteraction.lastUpdatedColumn = columnIndex;
+        this.currentInteraction.lastUpdatedColumn = column;
 
         switch (command) {
             case DynamicsCommand.Crescendo: case DynamicsCommand.Decrescendo:
                 let hairpinStart = start;
                 let hairpinEnd = end;
-
+                
+                this.safeEraseRange(voice, start, end);
                 this.writeRange(voice, start, end, command);
                 // Merge with hairpin before
                 if(this.getCommandForVoice(voice, start - 1) === command) {
                     hairpinStart = this.hairpinStart[voice][start - 1];
                 }
-                else if(this.getCommandForVoice(voice, start - 1) !== DynamicsCommand.None){
-
-                }
                 if(this.getCommandForVoice(voice, end + 1) === command) {
                     hairpinStart = this.hairpinEnd[voice][end + 1];
                 }
-                this.writeHairpinStartEnd(voice, hairpinStart, hairpinEnd, hairpinStart, hairpinEnd);
+                this.writeHairpinStartEnd(voice, hairpinStart, hairpinEnd);
 
                 break;
             case DynamicsCommand.None:
-                this.eraseRange(voice, start, end);
+                this.safeEraseRange(voice, start, end);
                 break;
         }
+        this.applyUIUpdates();
     }
 }
