@@ -1,6 +1,6 @@
 import {ScoreEditor} from "@/app/logic/editor/scoreEditor";
 import React, {useContext, useEffect, useState} from "react";
-import {createArray, useListenerOnWindow, useManualRerender} from "@/app/lib/util";
+import {createArray, useListenerOnWindow, useManualRerender} from "@/app/lib/utils/util";
 import {ScoreData} from "@/app/logic/scoreData";
 
 import './controls.css';

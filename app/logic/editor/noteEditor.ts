@@ -1,48 +1,28 @@
-import {ScoreData} from "@/app/logic/scoreData";
-import {createArray} from "@/app/lib/util";
+import {createArray} from "@/app/lib/utils/util";
 import {NUM_NOTES, NUM_VOICES} from "@/app/logic/Constants";
 import {NoteCommand} from "@/app/logic/voiceData";
 import {ScoreEditor} from "@/app/logic/editor/scoreEditor";
+import {Range} from "@/app/lib/utils/range";
+import {ScoreEditorComponent} from "@/app/logic/editor/scoreEditorComponent";
 
 export enum NoteEditorInteractionType {
     None = "",
     Blend = "blend", Write = "write", Erase = "erase"
 }
 
-enum NoteEditorBoundaryType {
-    Start,
-    End,
-    BlendStart,
-    BlendEnd
-}
+export class NoteEditor extends ScoreEditorComponent {
 
-class NoteEditorInteraction {
-    public readonly type: NoteEditorInteractionType;
-    public readonly  note: number;
-    public readonly  startColumn: number;
-    public endColumn: number;
-    public readonly  voice: number;
-
-    constructor(interactionType: NoteEditorInteractionType, interactionNote: number, interactionColumn: number, interactionVoice: number) {
-        this.type = interactionType;
-        this.note = interactionNote;
-        this.startColumn = this.endColumn = interactionColumn;
-        this.voice = interactionVoice;
-    }
-}
-
-export class NoteEditor {
     private currentInteraction: NoteEditorInteraction | null;
 
+    // Callbacks that let us manually update relevant parts of UI after operations
+    // This requires some "illegal" use of React hooks, but it is much more efficient
     private readonly uiUpdateCallbacks: (null | (() => void))[][];
     private readonly pendingUIUpdates: { columnIndex: number, noteIndex: number }[];
 
     private snapInterval: number;
 
-    private readonly editor: ScoreEditor;
-
     public constructor(editor: ScoreEditor) {
-        this.editor = editor;
+        super(editor);
         this.snapInterval = 1;
 
         this.uiUpdateCallbacks = createArray(editor.scoreData.length, () => createArray(NUM_NOTES, null));
@@ -50,14 +30,10 @@ export class NoteEditor {
 
         this.currentInteraction = null;
     }
-
-    public get scoreData() {
-        return this.editor.scoreData;
-    }
-
+    
     public clearNotes() {
         for (let voice = 0; voice < NUM_VOICES; voice++) {
-            for (let col = 0; col < this.scoreData.length; col++) {
+            for (let col = 0; col < this.length; col++) {
                 for (let note = 0; note < NUM_NOTES; note++) {
                     this.setCommandForVoice(voice, col, note, 0);
                 }
@@ -70,24 +46,25 @@ export class NoteEditor {
         this.snapInterval = snapInterval;
     }
 
-    startInteraction(columnIndex: number, noteIndex: number, interactionType : NoteEditorInteractionType) {
+    public startInteractionAt(columnIndex: number, noteIndex: number, interactionType : NoteEditorInteractionType) {
         this.currentInteraction = new NoteEditorInteraction(
             interactionType,
             noteIndex,
             columnIndex,
-            this.editor.activeVoice
+            this.editor.activeVoice,
+            this.snapInterval
         );
 
         this.updateInteractionEndCol(columnIndex);
         this.applyUIUpdates();
     }
 
-    endInteraction() {
+    public endInteraction() {
         this.currentInteraction = null;
         this.applyUIUpdates();
     }
 
-    mouseEnterColumn(columnIndex: number) {
+    public moveInteractionColumnTo(columnIndex: number) {
         if (this.currentInteraction === null) return;
 
         this.updateInteractionEndCol(columnIndex);
@@ -98,7 +75,6 @@ export class NoteEditor {
         this.uiUpdateCallbacks[columnIndex][noteIndex] = callback;
     }
 
-
     private snapStart(col: number) {
         return col - (col % this.snapInterval);
     }
@@ -107,34 +83,27 @@ export class NoteEditor {
         return col - (col % this.snapInterval) + this.snapInterval - 1;
     }
 
-    private sortAndSnapRange(a: number, b : number) : [number, number] {
-        return [
-            this.snapStart(Math.min(a, b)),
-            this.snapEnd(Math.max(a, b)),
-        ]
-    }
-
     private getVoiceData(voiceIndex: number) {
         return this.scoreData.voiceData[voiceIndex];
     }
 
-    private setCommandForVoice(voiceIndex: number, columnIndex: number, noteIndex: number, command: NoteCommand) {
-        if (columnIndex < 0 || columnIndex >= this.scoreData.length || noteIndex < 0 || noteIndex >= NUM_NOTES) {
+    private setCommandForVoice(voice: number, column: number, note: number, command: NoteCommand) {
+        if (column < 0 || column >= this.length || note < 0 || note >= NUM_NOTES) {
             return;
         }
 
-        const oldCommand = this.getVoiceData(voiceIndex).getNoteCommand(columnIndex, noteIndex).command;
+        const oldCommand = this.getVoiceData(voice).getNoteCommand(column, note).command;
         if (command !== oldCommand) {
-            this.getVoiceData(voiceIndex).setNoteCommand(columnIndex, noteIndex, command);
-            this.pendingUIUpdates.push({columnIndex, noteIndex});
+            this.getVoiceData(voice).setNoteCommand(column, note, command);
+            this.pendingUIUpdates.push({columnIndex: column, noteIndex: note});
         }
     }
 
-    private getCommandForVoice(voiceIndex: number, columnIndex: number, noteIndex: number) {
-        if (columnIndex < 0 || columnIndex >= this.scoreData.length || noteIndex < 0 || noteIndex >= NUM_NOTES) {
-            return NoteCommand.Empty;
+    public getCommandFor(voice: number, column: number, note: number) {
+        if (column < 0 || column >= this.length || note < 0 || note >= NUM_NOTES) {
+            return NoteCommand.None;
         }
-        return this.getVoiceData(voiceIndex).getNoteCommand(columnIndex, noteIndex).command;
+        return this.getVoiceData(voice).getNoteCommand(column, note).command;
     }
 
     private applyUIUpdates() {
@@ -146,14 +115,15 @@ export class NoteEditor {
         }
     }
 
+    // TODO: refactor to have less nesting
     private applyBoundary(voiceIndex: number, col: number, note: number, type: NoteEditorBoundaryType) {
-        const currCommand = this.getCommandForVoice(voiceIndex, col, note);
+        const currCommand = this.getCommandFor(voiceIndex, col, note);
         let newCommand = currCommand;
 
         // noinspection FallThroughInSwitchStatementJS
         switch (type) {
             case NoteEditorBoundaryType.BlendStart:
-                if (this.getCommandForVoice(voiceIndex, col - 1, note) !== 0) {
+                if (this.getCommandFor(voiceIndex, col - 1, note) !== 0) {
                     switch (currCommand) {
                         case NoteCommand.BeginNote:
                             newCommand = NoteCommand.HoldNote;
@@ -175,7 +145,7 @@ export class NoteEditor {
                 }
                 break;
             case NoteEditorBoundaryType.BlendEnd:
-                if (this.getCommandForVoice(voiceIndex, col + 1, note) !== 0) {
+                if (this.getCommandFor(voiceIndex, col + 1, note) !== 0) {
                     switch (currCommand) {
                         case NoteCommand.EndNote:
                             newCommand = NoteCommand.HoldNote;
@@ -200,56 +170,91 @@ export class NoteEditor {
         this.setCommandForVoice(voiceIndex, col, note, newCommand);
     }
 
-    private eraseRange(voiceIndex: number, startCol: number, endCol: number, note: number) {
-        for (let col = startCol; col <= endCol; col++) {
-            this.setCommandForVoice(voiceIndex, col, note, 0);
-        }
+    private eraseRange(voiceIndex: number, colRange: Range, note: number) {
+        colRange.forEach(col => this.setCommandForVoice(voiceIndex, col, note, NoteCommand.None));
     }
 
-    private writeRange(voiceIndex: number, startCol: number, endCol: number, note: number) {
-        for (let col = startCol; col <= endCol; col++) {
-            this.setCommandForVoice(voiceIndex, col, note, NoteCommand.HoldNote);
-        }
+    private writeRange(voiceIndex: number, colRange: Range, note: number) {
+        colRange.forEach(col => this.setCommandForVoice(voiceIndex, col, note, NoteCommand.HoldNote));
     }
 
     private updateInteractionEndCol(columnIndex: number) {
         if(this.currentInteraction === null) return;
+        const {voice, note} = this.currentInteraction;
 
-        const voice = this.currentInteraction.voice;
-
-        const [oldStartCol, oldEndCol] = this.sortAndSnapRange(this.currentInteraction.startColumn, this.currentInteraction.endColumn);
-        const note = this.currentInteraction.note;
-
+        const oldColRange = this.currentInteraction.columnRange;
         this.currentInteraction.endColumn = columnIndex;
-
-        const [newStartCol, newEndCol] = this.sortAndSnapRange(this.currentInteraction.startColumn, this.currentInteraction.endColumn);
+        const newColRange = this.currentInteraction.columnRange;
 
         switch (this.currentInteraction.type) {
             case 'blend':
-                this.writeRange(voice, newStartCol, newEndCol, note);
-
-                this.applyBoundary(voice, newStartCol, note, NoteEditorBoundaryType.Start);
-                this.applyBoundary(voice, newEndCol, note, NoteEditorBoundaryType.End);
-                this.applyBoundary(voice, newStartCol, note, NoteEditorBoundaryType.BlendStart);
-                this.applyBoundary(voice, newEndCol, note, NoteEditorBoundaryType.BlendEnd);
-                this.applyBoundary(voice, newStartCol - 1, note, NoteEditorBoundaryType.BlendEnd);
-                this.applyBoundary(voice, newEndCol + 1, note, NoteEditorBoundaryType.BlendStart);
+                this.writeRange(voice, newColRange, note);
+                this.blendNotesAtRangeEndpoints(voice, newColRange, note);
                 break;
             case 'erase':
-                this.eraseRange(voice, newStartCol, newEndCol, note);
+                this.eraseRange(voice, newColRange, note);
 
-                this.applyBoundary(voice, newStartCol - 1, note, NoteEditorBoundaryType.BlendEnd);
-                this.applyBoundary(voice, newEndCol + 1, note, NoteEditorBoundaryType.BlendStart);
+                this.applyBoundary(voice, newColRange.start - 1, note, NoteEditorBoundaryType.BlendEnd);
+                this.applyBoundary(voice, newColRange.end + 1, note, NoteEditorBoundaryType.BlendStart);
                 break;
             case 'write': {
-                this.eraseRange(voice, oldStartCol, oldEndCol, note);
-
-                this.writeRange(voice, newStartCol, newEndCol, note);
-                this.applyBoundary(voice, newStartCol, note, NoteEditorBoundaryType.Start);
-                this.applyBoundary(voice, newEndCol, note, NoteEditorBoundaryType.End);
-                this.applyBoundary(voice, newStartCol - 1, note, NoteEditorBoundaryType.End);
-                this.applyBoundary(voice, newEndCol + 1, note, NoteEditorBoundaryType.Start);
+                this.eraseRange(voice, oldColRange, note);
+                this.writeRange(voice, newColRange, note);
+                this.separateNotesAtRangeEndpoints(voice, newColRange, note);
             }
         }
+    }
+
+    private separateNotesAtRangeEndpoints(voice: number, newColRange: Range, note: number) {
+        this.applyBoundary(voice, newColRange.start, note, NoteEditorBoundaryType.Start);
+        this.applyBoundary(voice, newColRange.end, note, NoteEditorBoundaryType.End);
+        this.applyBoundary(voice, newColRange.start - 1, note, NoteEditorBoundaryType.End);
+        this.applyBoundary(voice, newColRange.end + 1, note, NoteEditorBoundaryType.Start);
+    }
+
+    private blendNotesAtRangeEndpoints(voice: number, newColRange: Range, note: number) {
+        this.applyBoundary(voice, newColRange.start, note, NoteEditorBoundaryType.BlendStart);
+        this.applyBoundary(voice, newColRange.end, note, NoteEditorBoundaryType.BlendEnd);
+        this.applyBoundary(voice, newColRange.start - 1, note, NoteEditorBoundaryType.BlendEnd);
+        this.applyBoundary(voice, newColRange.end + 1, note, NoteEditorBoundaryType.BlendStart);
+    }
+}
+
+enum NoteEditorBoundaryType {
+    Start,
+    End,
+    BlendStart,
+    BlendEnd
+}
+
+class NoteEditorInteraction {
+    public readonly type: NoteEditorInteractionType;
+    public readonly  note: number;
+    public readonly  startColumn: number;
+    public endColumn: number;
+    public readonly  voice: number;
+
+    private readonly columnSnappingInterval: number;
+
+    constructor(interactionType: NoteEditorInteractionType, interactionNote: number, interactionColumn: number, interactionVoice: number, snappingInterval: number) {
+        this.type = interactionType;
+        this.note = interactionNote;
+        this.columnSnappingInterval = snappingInterval;
+        this.startColumn = this.endColumn = interactionColumn;
+        this.voice = interactionVoice;
+    }
+
+    private snapStart(col: number) {
+        return col - (col % this.columnSnappingInterval);
+    }
+
+    private snapEnd(col: number) {
+        return col - (col % this.columnSnappingInterval) + this.columnSnappingInterval - 1;
+    }
+
+    get columnRange() {
+        return Range.fromEndpoints(this.startColumn, this.endColumn)
+            .modifyStart(start => this.snapStart(start))
+            .modifyEnd(end => this.snapEnd(end))
     }
 }

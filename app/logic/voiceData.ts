@@ -1,17 +1,17 @@
-import {createArray} from "@/app/lib/util";
+import {createArray} from "@/app/lib/utils/util";
 import {ScoreData} from "@/app/logic/scoreData";
 import {Instrument} from "@/app/logic/instrument";
 import {NUM_NOTES} from "@/app/logic/Constants";
 
 export class VoiceData {
     readonly #noteCommands: NoteCommand[][];
-    readonly #dynamicsCommands: DynamicsCommand[];
-    readonly #dynamicsValues: DynamicsValue[];
+    readonly #continuousDynamicsCommands: ContinuousDynamicsCommand[];
+    readonly #pointDynamicsValues: PointDynamicsValue[];
 
     constructor(length: number) {
-        this.#noteCommands = createArray(length, () => createArray(NUM_NOTES, NoteCommand.Empty));
-        this.#dynamicsCommands = createArray(length, DynamicsCommand.None);
-        this.#dynamicsValues = createArray(length, DynamicsValue.None);
+        this.#noteCommands = createArray(length, () => createArray(NUM_NOTES, NoteCommand.None));
+        this.#continuousDynamicsCommands = createArray(length, ContinuousDynamicsCommand.None);
+        this.#pointDynamicsValues = createArray(length, PointDynamicsValue.None);
     }
 
     getNoteCommand(column: number, noteIndex: number) {
@@ -27,38 +27,38 @@ export class VoiceData {
         this.#noteCommands[column][note] = command;
     }
 
-    getDynamicCommand(column: number) {
-        return this.#dynamicsCommands[column];
+    getContinuousDynamics(column: number) {
+        return this.#continuousDynamicsCommands[column];
     }
 
-    setDynamicCommand(column: number, value: DynamicsCommand) {
-        this.#dynamicsCommands[column] = value;
+    setContinuousDynamics(column: number, value: ContinuousDynamicsCommand) {
+        this.#continuousDynamicsCommands[column] = value;
     }
 
-    getDynamicValue(column: number) {
-        return this.#dynamicsValues[column];
+    getPointDynamics(column: number) {
+        return this.#pointDynamicsValues[column];
     }
 
-    setDynamicValue(column: number, value: DynamicsValue) {
-        this.#dynamicsValues[column] = value;
+    setPointDynamics(column: number, value: PointDynamicsValue) {
+        this.#pointDynamicsValues[column] = value;
     }
 }
 
 export enum NoteCommand {
-    Empty,
+    None,
     BeginNote,
     HoldNote,
     EndNote,
     ShortNote,
 }
 
-export enum DynamicsCommand {
+export enum ContinuousDynamicsCommand {
     None = "",
     Crescendo = "<",
-    Decrescendo = ">",
+    Diminuendo = ">",
 }
 
-export enum DynamicsValue {
+export enum PointDynamicsValue {
     None = '',
 
     ff = 'ff',

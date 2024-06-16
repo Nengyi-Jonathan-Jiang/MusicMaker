@@ -1,11 +1,11 @@
 import {Instrument} from "@/app/logic/instrument";
-import {createArray} from "@/app/lib/util";
+import {createArray} from "@/app/lib/utils/util";
 import {getTransport, now} from "tone";
 import * as Constants from "@/app/logic/Constants";
 import {ScoreData} from "@/app/logic/scoreData";
-import {LinearValueConvertor, ValueConvertor} from "@/app/lib/valueConvertor";
-import {MaximumNumberFinder} from "@/app/lib/minMax";
-import {IScrollSyncer, ScrollableElement, ScrollPane} from "@/app/lib/scrollSync";
+import {LinearValueConvertor, ValueConvertor} from "@/app/lib/utils/valueConvertor";
+import {MaximumNumberFinder} from "@/app/lib/utils/minMax";
+import {IScrollSyncer, ScrollableElement, ScrollPane} from "@/app/lib/react-utils/scrollSync";
 import {NUM_NOTES, NUM_VOICES} from "@/app/logic/Constants";
 
 const columnsToScrollAmountConvertor = new LinearValueConvertor(14, 19);

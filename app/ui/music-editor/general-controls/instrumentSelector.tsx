@@ -1,12 +1,12 @@
-import {useManualRerender} from "@/app/lib/util";
+import {useManualRerender} from "@/app/lib/utils/util";
 import {instrumentData} from "@/public/audio/allInstruments";
-import {AsyncTask} from "@/app/lib/asyncTask";
+import {AsyncTask} from "@/app/lib/utils/asyncTask";
 import React, {useContext} from "react";
 import {ScoreEditorContext} from "@/app/ui/music-editor/musicEditor";
 import {ScoreEditor} from "@/app/logic/editor/scoreEditor";
 
 import './controls.css'
-import {Select} from "@/app/lib/select";
+import {Select} from "@/app/lib/react-utils/select";
 import {Instrument} from "@/app/logic/instrument";
 
 export function InstrumentSelector() {

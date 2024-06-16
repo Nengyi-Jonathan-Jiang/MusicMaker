@@ -1,12 +1,13 @@
 import './note-editor.css'
 
 import React, {memo, RefObject, useContext, useEffect, useRef, useState} from "react";
-import {arraysEqual, createArray, useListenerOnWindow} from "@/app/lib/util";
+import {arraysEqual, createArray, useListenerOnWindow} from "@/app/lib/utils/util";
 import {NoteCommand} from "@/app/logic/voiceData";
 import {NoteEditorContext} from "@/app/ui/music-editor/musicEditor";
 import {RenderWhenVisible} from "@/app/ui/renderWhenVisible";
-import {ScrollPane, ScrollSyncContext} from "@/app/lib/scrollSync";
+import {ScrollPane, ScrollSyncContext} from "@/app/lib/react-utils/scrollSync";
 import {NoteEditor, NoteEditorInteractionType} from "@/app/logic/editor/noteEditor";
+import {NUM_VOICES} from "@/app/logic/Constants";
 
 function PlaceholderNoteEditorColumn({elementRef}: { elementRef: React.RefObject<HTMLDivElement> }) {
     return <div className={"piano-notes-column piano-notes-column-placeholder"} ref={elementRef}></div>;
@@ -42,7 +43,7 @@ export function NoteEditorDisplay() {
         <div id="piano-note-names"> {new Array(88).fill(null).map((_, i) => <span
             key={`note-name-${i}`}></span>)} </div>
         <div id="piano-notes">
-            {createArray(editor.scoreData.length, i =>
+            {createArray(editor.length, i =>
                 <RenderWhenVisible key={i} placeholderSupplier={
                     (ref: RefObject<HTMLDivElement>) => <PlaceholderNoteEditorColumn elementRef={ref}/>
                 }>
@@ -76,13 +77,11 @@ function NoteEditorKey({columnIndex, noteIndex}: {
 
     editor.setUIUpdateCallback(columnIndex, noteIndex, () => setDummyState(dummyState + 1));
 
-    const commands = editor.scoreData.voiceData.map(data =>
-        data.getNoteCommand(columnIndex, noteIndex).command
-    );
+    const commands = createArray(NUM_VOICES, voice => editor.getCommandFor(voice, columnIndex, noteIndex));
 
     return (
         <span className="piano-notes-key" onMouseDown={e => {
-            editor.startInteraction(columnIndex, noteIndex, (
+            editor.startInteractionAt(columnIndex, noteIndex, (
                 e.button === 0 ?
                     e.ctrlKey ? NoteEditorInteractionType.Blend :
                         NoteEditorInteractionType.Write :
@@ -104,7 +103,7 @@ function NoteEditorColumn({columnIndex}: { columnIndex: number }) {
         <div
             className="piano-notes-column"
             onMouseEnter={() => {
-                editor.mouseEnterColumn(columnIndex);
+                editor.moveInteractionColumnTo(columnIndex);
                 setDummyState(dummyState + 1);
             }}
         >

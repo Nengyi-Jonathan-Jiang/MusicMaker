@@ -1,7 +1,7 @@
 "use client";
 
 import {createContext} from 'react'
-import {clamp, getFirstElementFromSet} from "@/app/lib/util";
+import {clamp, getFirstElementFromSet} from "@/app/lib/utils/util";
 
 export interface IScrollSyncer {
     registerPane(pane: ScrollPane): void;

@@ -1,9 +1,9 @@
 import {ScoreData} from "@/app/logic/scoreData";
 import {ScorePlayer} from "@/app/logic/scorePlayer";
 import {Instrument} from "@/app/logic/instrument";
-import {IScrollSyncer} from "@/app/lib/scrollSync";
+import {IScrollSyncer} from "@/app/lib/react-utils/scrollSync";
 import {NoteEditor} from "@/app/logic/editor/noteEditor";
-import {DynamicsEditor} from "@/app/logic/editor/dynamicsEditor";
+import {ContinuousDynamicsEditor} from "@/app/logic/editor/continuousDynamicsEditor";
 
 export class ScoreEditor {
 
@@ -12,7 +12,7 @@ export class ScoreEditor {
     readonly #scoreData: ScoreData;
     readonly #scorePlayer: ScorePlayer;
     readonly #noteEditor: NoteEditor;
-    readonly #dynamicsEditor: DynamicsEditor;
+    readonly #continuousDynamicsEditor: ContinuousDynamicsEditor;
 
     constructor(score_length : number) {
         this.#scoreData = new ScoreData(score_length);
@@ -20,11 +20,12 @@ export class ScoreEditor {
         this.#activeVoice = 0;
 
         this.#noteEditor = new NoteEditor(this);
-        this.#dynamicsEditor = new DynamicsEditor(this);
+        this.#continuousDynamicsEditor = new ContinuousDynamicsEditor(this);
     }
 
     clearScore() {
         this.#noteEditor.clearNotes();
+        this.#continuousDynamicsEditor.clearContinuousDynamics();
     }
 
     get activeVoice() {
@@ -45,8 +46,8 @@ export class ScoreEditor {
         return this.#noteEditor;
     }
 
-    get dynamicsEditor() {
-        return this.#dynamicsEditor;
+    get continuousDynamicsEditor() {
+        return this.#continuousDynamicsEditor;
     }
 
     useSnappingInterval(snapInterval: number) {

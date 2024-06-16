@@ -1,4 +1,4 @@
-import {createArray} from "@/app/lib/util";
+import {createArray} from "@/app/lib/utils/util";
 import {VoiceData} from "@/app/logic/voiceData";
 import {Instrument} from "@/app/logic/instrument";
 import { NUM_VOICES } from "./Constants";

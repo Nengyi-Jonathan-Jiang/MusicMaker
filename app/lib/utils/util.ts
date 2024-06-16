@@ -1,4 +1,4 @@
-import {DependencyList, useEffect, useState} from "react";
+import {DependencyList, RefObject, useEffect, useState} from "react";
 
 /**
  * Creates an array with a specified length and fills it with values.
@@ -10,6 +10,19 @@ export function createArray<T>(length: number, value: T | ((index: number) => T)
     return typeof value === "function"
         ? new Array(length).fill(null).map((_, i) => (value as (index : number) => T)(i))
         : new Array(length).fill(value);
+}
+
+export function editArray<T>(arr: T[], startInclusive : number, endInclusive : number, value: T | ((value: T, index: number) => T)) : void {
+    if(typeof value === "function") {
+        for(let i = startInclusive; i <= endInclusive; i++) {
+            arr[i] = (value as ((value: T, index: number) => T))(arr[i], i);
+        }
+    }
+    else {
+        for(let i = startInclusive; i <= endInclusive; i++) {
+            arr[i] = value;
+        }
+    }
 }
 
 export function arraysEqual<T>(a: T[], b: T[]) {
@@ -62,6 +75,35 @@ export function useListenerOnWindow<K extends keyof WindowEventMap>(
 
         return () => {
             window.removeEventListener(listenerType, listener);
+        }
+    }, dependencies ?? []);
+}
+
+/**
+ * A custom react hook. Equivalent to
+ * <pre>
+ * useEffect(() => {
+ *     element.addEventListener(listenerType, listener);
+ *
+ *     return () => {
+ *         element.removeEventListener(listenerType, listener);
+ *     }
+ * }, dependencies ?? []);
+ * </pre>
+ */
+export function useListenerOnHTMLElement<E extends HTMLElement, K extends keyof HTMLElementEventMap>(
+    element: RefObject<E>,
+    listenerType: K,
+    listener: (this: E, ev: HTMLElementEventMap[K]) => any,
+    dependencies ?: DependencyList
+): void {
+    type listener_t = (this: HTMLElement, ev: HTMLElementEventMap[K]) => any;
+
+    useEffect(() => {
+        element.current?.addEventListener(listenerType, listener as listener_t);
+
+        return () => {
+            element.current?.removeEventListener(listenerType, listener as listener_t);
         }
     }, dependencies ?? []);
 }

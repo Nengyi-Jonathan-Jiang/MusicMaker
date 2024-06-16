@@ -27,6 +27,7 @@
 .dynamics-column {
     background-color: var(--bg-color-dark);
     position:         relative;
+    user-select: none;
 }
 
 .dynamics-column::after {

@@ -2,12 +2,13 @@ import React, {MutableRefObject, RefObject, useContext, useEffect, useRef, useSt
 
 import './dynamics.css';
 
-import {ScoreEditorContext} from "@/app/ui/music-editor/musicEditor";
+import {ContinuousDynamicsEditorContext, ScoreEditorContext} from "@/app/ui/music-editor/musicEditor";
 import {ScoreEditor} from "@/app/logic/editor/scoreEditor";
-import {createArray, useManualRerender} from "@/app/lib/util";
+import {createArray, useListenerOnHTMLElement, useListenerOnWindow, useManualRerender} from "@/app/lib/utils/util";
 import {RenderWhenVisible} from "@/app/ui/renderWhenVisible";
-import {ScrollPane, ScrollSyncContext} from "@/app/lib/scrollSync";
-import {DynamicsCommand, DynamicsValue} from "@/app/logic/voiceData";
+import {ScrollPane, ScrollSyncContext} from "@/app/lib/react-utils/scrollSync";
+import {ContinuousDynamicsCommand, PointDynamicsValue} from "@/app/logic/voiceData";
+import {ContinuousDynamicsEditor} from "@/app/logic/editor/continuousDynamicsEditor";
 
 const dynamics_characters = {
     p: '\ue520',
@@ -16,21 +17,13 @@ const dynamics_characters = {
     n: '\ue526',
 };
 
-type DynamicsOption = DynamicsValue | DynamicsCommand;
+type DynamicsOption = PointDynamicsValue | ContinuousDynamicsCommand;
 
-function getDynamicsText(value: DynamicsValue) {
+function getDynamicsText(value: PointDynamicsValue) {
     return [...value].map(i => dynamics_characters[i as 'p' | 'm' | 'f' | 'n']).join('');
 }
 
 function CrescendoMarking({size}: { size: number }) {
-    let w = size * 14;
-    const h = 14;
-    return <svg width={`${w}`} height={`${h}`} viewBox={`0 0 ${w} ${h}`}>
-        <path d={`M 3 1 L ${w - 3} ${h / 2} 3 ${h - 1}`} fill="none" stroke="currentcolor" strokeLinejoin="bevel"/>
-    </svg>
-}
-
-function DecrescendoMarking({size}: { size: number }) {
     let w = size * 14;
     const h = 14;
     return <svg width={`${w}`} height={`${h}`} viewBox={`0 0 ${w} ${h}`}>
@@ -39,82 +32,76 @@ function DecrescendoMarking({size}: { size: number }) {
     </svg>
 }
 
+function DiminuendoMarking({size}: { size: number }) {
+    let w = size * 14;
+    const h = 14;
+    return <svg width={`${w}`} height={`${h}`} viewBox={`0 0 ${w} ${h}`}>
+        <path d={`M 3 1 L ${w - 3} ${h / 2} 3 ${h - 1}`} fill="none" stroke="currentcolor" strokeLinejoin="bevel"/>
+    </svg>
+}
+
 function DynamicsColumn({columnIndex, currDynamicOptionRef}: {
     columnIndex: number,
     currDynamicOptionRef: React.MutableRefObject<DynamicsOption | null>
 }) {
     const editor = useContext(ScoreEditorContext) as ScoreEditor;
+    const dEditor = useContext(ContinuousDynamicsEditorContext) as ContinuousDynamicsEditor;
 
     const rerender = useManualRerender();
+    dEditor.setUIUpdateCallback(columnIndex, rerender);
 
     const columnRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        if (!columnRef.current) return;
+    function onInteractionEnd() {
+        dEditor.endInteraction();
+    }
 
-        const el = columnRef.current;
+    useListenerOnHTMLElement(columnRef, 'mousedown', e => {
+        if (!currDynamicOptionRef.current) return;
 
-        el.oncontextmenu = e => e.preventDefault();
-
-        el.onmousedown = e => {
-            if (!currDynamicOptionRef.current) return;
-
-            if(e.button === 0) {
-                switch (currDynamicOptionRef.current) {
-                    case DynamicsValue.ff:
-                    case DynamicsValue.f:
-                    case DynamicsValue.mf:
-                    case DynamicsValue.mp:
-                    case DynamicsValue.p:
-                    case DynamicsValue.pp:
-                    case DynamicsValue.n:
-                        if (editor.activeVoiceData.getDynamicValue(columnIndex - 1) || editor.activeVoiceData.getDynamicValue(columnIndex + 1)) {
-                            return;
-                        }
-                        editor.activeVoiceData.setDynamicValue(columnIndex, currDynamicOptionRef.current);
-                        rerender();
-                        break;
-                    case DynamicsCommand.Crescendo:
-                    case DynamicsCommand.Decrescendo:
-                        el.onmouseenter?.({buttons: 1} as MouseEvent);
-                }
-            }
-            else if(e.button === 2) {
-                switch (currDynamicOptionRef.current) {
-                    case DynamicsValue.ff:
-                    case DynamicsValue.f:
-                    case DynamicsValue.mf:
-                    case DynamicsValue.mp:
-                    case DynamicsValue.p:
-                    case DynamicsValue.pp:
-                    case DynamicsValue.n:
-                        editor.activeVoiceData.setDynamicValue(columnIndex, DynamicsValue.None);
-                        rerender();
-                        break;
-                    case DynamicsCommand.Crescendo:
-                    case DynamicsCommand.Decrescendo:
-                        el.onmouseenter?.({buttons: 2} as MouseEvent);
-                }
+        if(e.button === 0) {
+            switch (currDynamicOptionRef.current) {
+                case PointDynamicsValue.ff: case PointDynamicsValue.f: case PointDynamicsValue.mf:
+                case PointDynamicsValue.mp: case PointDynamicsValue.p: case PointDynamicsValue.pp:
+                case PointDynamicsValue.n:
+                    if (editor.activeVoiceData.getPointDynamics(columnIndex - 1) || editor.activeVoiceData.getPointDynamics(columnIndex + 1)) {
+                        return;
+                    }
+                    editor.activeVoiceData.setPointDynamics(columnIndex, currDynamicOptionRef.current);
+                    rerender();
+                    break;
+                case ContinuousDynamicsCommand.Crescendo:
+                case ContinuousDynamicsCommand.Diminuendo:
+                    dEditor.startInteraction(columnIndex, currDynamicOptionRef.current);
             }
         }
-
-        el.onmouseenter = e => {
-            if(e.buttons & 2) {
-                editor.activeVoiceData.setDynamicCommand(columnIndex, DynamicsCommand.None);
-                rerender();
-            }
-            else if((e.buttons & 1) && ([DynamicsCommand.Crescendo, DynamicsCommand.Decrescendo] as any[]).includes(currDynamicOptionRef.current)) {
-                editor.activeVoiceData.setDynamicCommand(columnIndex, currDynamicOptionRef.current as DynamicsCommand);
-                rerender();
+        else if(e.button === 2) {
+            switch (currDynamicOptionRef.current) {
+                case PointDynamicsValue.ff: case PointDynamicsValue.f: case PointDynamicsValue.mf:
+                case PointDynamicsValue.mp: case PointDynamicsValue.p: case PointDynamicsValue.pp:
+                case PointDynamicsValue.n:
+                    editor.activeVoiceData.setPointDynamics(columnIndex, PointDynamicsValue.None);
+                    rerender();
+                    break;
+                case ContinuousDynamicsCommand.Crescendo:
+                case ContinuousDynamicsCommand.Diminuendo:
+                    dEditor.startInteraction(columnIndex, ContinuousDynamicsCommand.None);
             }
         }
     });
 
+    useListenerOnHTMLElement(columnRef, 'contextmenu', e => e.preventDefault());
+    useListenerOnHTMLElement(columnRef, 'mouseenter', () => dEditor.mouseEnterColumn(columnIndex));
+
+    useListenerOnWindow(window, 'mouseup', onInteractionEnd);
+    useListenerOnWindow(window, 'blur', onInteractionEnd);
+    useListenerOnWindow(window, 'mouseleave', onInteractionEnd);
+
     return <div className="dynamics-column" ref={columnRef}>
         {
             editor.scoreData.voiceData.map((voiceData, i) => {
-                const val = voiceData.getDynamicValue(columnIndex);
-                return val ? (
+                const val = voiceData.getPointDynamics(columnIndex);
+                return val !== PointDynamicsValue.None ? (
                     <span className={`dynamics-marking dynamics-value voice-${i + 1} dynamic-${val}`} key={i}>
                         {getDynamicsText(val)}
                     </span>
@@ -122,20 +109,20 @@ function DynamicsColumn({columnIndex, currDynamicOptionRef}: {
             })
         }
         {
-            editor.scoreData.voiceData.map((voiceData, i) => {
-                const val = voiceData.getDynamicCommand(columnIndex);
-                if (!val || voiceData.getDynamicCommand(columnIndex - 1) === val) {
-                    return null;
-                } else {
-                    // Figure out length of dynamics
-                    let length = 0;
-                    while (voiceData.getDynamicCommand(columnIndex + length) === val) length++;
-                    return <span className={`dynamics-marking dynamics-crescendo voice-${i + 1}`} key={i}>
-                        {
-                            val === DynamicsCommand.Crescendo ? <CrescendoMarking size={length}/> : <DecrescendoMarking size={length}/>
-                        }
+            editor.scoreData.voiceData.map((voiceData, voice) => {
+                const val = voiceData.getContinuousDynamics(columnIndex);
+
+                const hairpinInterval = dEditor.getHairpinInterval(voice, columnIndex);
+                if(hairpinInterval && hairpinInterval.start === columnIndex) {
+
+                    const Marking = val === ContinuousDynamicsCommand.Crescendo ? CrescendoMarking : DiminuendoMarking;
+
+                    return <span className={`dynamics-marking dynamics-crescendo voice-${voice + 1}`} key={voice}>
+                        <Marking size={hairpinInterval.length}/>
                     </span>
                 }
+                return null;
+
             })
         }
     </div>;
@@ -157,9 +144,9 @@ export function DynamicOptionSelector({currDynamicOptionRef}: {
     return <div id="dynamic-options">
         {
             [
-                DynamicsValue.pp, DynamicsValue.p, DynamicsValue.mp,
-                DynamicsValue.mf, DynamicsValue.f, DynamicsValue.ff,
-                DynamicsValue.n,
+                PointDynamicsValue.pp, PointDynamicsValue.p, PointDynamicsValue.mp,
+                PointDynamicsValue.mf, PointDynamicsValue.f, PointDynamicsValue.ff,
+                PointDynamicsValue.n,
             ].map((value) => {
                 return <span className="dynamic-option" key={value}
                              data-active={value === currDynamicOption ? '' : null}
@@ -168,7 +155,7 @@ export function DynamicOptionSelector({currDynamicOptionRef}: {
         }
         {
             [
-                DynamicsCommand.Crescendo, DynamicsCommand.Decrescendo,
+                ContinuousDynamicsCommand.Crescendo, ContinuousDynamicsCommand.Diminuendo,
             ].map((value) => {
                 return <span className="dynamic-option" key={value}
                              data-active={value === currDynamicOption ? '' : null}

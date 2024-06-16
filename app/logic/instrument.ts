@@ -2,7 +2,7 @@ import * as Tone from "tone";
 import {Sampler, SamplerOptions} from "tone";
 import {instrumentData} from "@/public/audio/allInstruments";
 
-import {AsyncTask} from "@/app/lib/asyncTask";
+import {AsyncTask} from "@/app/lib/utils/asyncTask";
 
 export class Instrument {
     static get DEFAULT_TYPE () { return 'Piano' }
